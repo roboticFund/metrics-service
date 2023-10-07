@@ -15,6 +15,7 @@ export class TradeExecutionStack extends cdk.Stack {
     // Create CI/CD pipeline
     const pipeline = new CodePipeline(this, "trade-execution-pipeline", {
       pipelineName: "trade-execution-pipeline",
+      dockerEnabledForSynth: true,
       synth: new ShellStep("Synth", {
         input: CodePipelineSource.gitHub("roboticFund/trade-execution", "main"),
         commands: ["npm ci", "npm run build", "npx cdk synth"],
