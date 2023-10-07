@@ -10,14 +10,23 @@ export class TradeExecutionStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const tradeExecutionLambda = new NodejsFunction(this, "trade-execution-lambda", {
+    // Main application to connect to IG broker
+    const tradeExecutionLambdaIG = new NodejsFunction(this, "trade-execution-lambda-ig", {
       runtime: lambda.Runtime.NODEJS_LATEST,
       entry: path.join(__dirname, `/../resources/app.ts`),
-      handler: "handler",
-      environment: {},
+      handler: "handlerIG",
+      environment: { BROKER: "IG" },
     });
 
-    // Need to create SNS topic
+    // Main application to connect to CityIndex broker
+    const tradeExecutionLambdaCI = new NodejsFunction(this, "trade-execution-lambda-ci", {
+      runtime: lambda.Runtime.NODEJS_LATEST,
+      entry: path.join(__dirname, `/../resources/app.ts`),
+      handler: "handlerCI",
+      environment: { BROKER: "CI" },
+    });
+
+    // Need to create SNS topic to push new trade events too
 
     // Need to register schema
     const tradeBrokerResponseSchema = new cdk.aws_eventschemas.CfnSchema(this, "tradeBrokerResponseSchema", {
