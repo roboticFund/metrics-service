@@ -5,7 +5,7 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import path = require("path");
-import { tradeBrokerResponse } from "../resources/schema/tradeBrokerResponse";
+import { tradeBrokerResponseObject } from "../resources/schema/tradeBrokerResponse";
 
 export class TradeExecutionStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -40,7 +40,7 @@ export class TradeExecutionStack extends cdk.Stack {
     const tradeBrokerResponseSchema = new cdk.aws_eventschemas.CfnSchema(this, "tradeBrokerResponseSchema", {
       registryName: "roboticfund-custom-schema-registry",
       type: "JSONSchemaDraft4",
-      content: JSON.stringify(tradeBrokerResponse),
+      content: JSON.stringify(tradeBrokerResponseObject),
       description: "Schema for the response returned from the broker when attempting to place a trade.",
       tags: [],
     });
