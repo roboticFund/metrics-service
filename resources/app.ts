@@ -1,7 +1,17 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import publishNewTradeEvent from "./utils/publishEvent";
+import getCustomerCredentials from "./utils/getSecrets";
 
-// lambdaHandler takes event, e.g. {fromDate: 2022-03-01, toDate: 2022-03-02}
+export const handler = async (event: any): Promise<APIGatewayProxyResult> => {
+  // Load data from secrets manager and route to IG or CI handler
+  let customerCredentials = await getCustomerCredentials();
+
+  return {
+    statusCode: 200,
+    body: `Successfully ran trade-execution-lambda`,
+  };
+};
+
 export const handlerIG = async (event: any): Promise<APIGatewayProxyResult> => {
   await publishNewTradeEvent({ account: "IG_ROBOTICFUND", broker: "IG" });
   return {

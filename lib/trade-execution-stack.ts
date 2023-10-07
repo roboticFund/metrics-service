@@ -4,6 +4,7 @@ import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as secrets from "aws-cdk-lib/aws-secretsmanager";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { tradeBrokerResponseObject } from "../resources/schema/tradeBrokerResponse";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
@@ -28,24 +29,15 @@ export class TradeExecutionStack extends cdk.Stack {
       actions: ["SNS:Publish"],
       resources: [tradeBrokerResponseTopic.topicArn],
     });
-
     // Main application to connect to IG broker
-    const tradeExecutionLambdaIG = new NodejsFunction(this, "trade-execution-lambda-ig", {
+    const tradeExecutionLambda = new NodejsFunction(this, "trade-execution-lambda", {
       runtime: lambda.Runtime.NODEJS_LATEST,
       entry: path.join(__dirname, `/../resources/app.ts`),
-      handler: "handlerIG",
-      environment: { BROKER: "IG" },
+      handler: "handler",
+      environment: {},
     });
-    tradeExecutionLambdaIG.addToRolePolicy(tradeBrokerResponseTopicPolicy);
-
-    // Main application to connect to CityIndex broker
-    const tradeExecutionLambdaCI = new NodejsFunction(this, "trade-execution-lambda-ci", {
-      runtime: lambda.Runtime.NODEJS_LATEST,
-      entry: path.join(__dirname, `/../resources/app.ts`),
-      handler: "handlerCI",
-      environment: { BROKER: "CI" },
-    });
-    tradeExecutionLambdaCI.addToRolePolicy(tradeBrokerResponseTopicPolicy);
+    tradeExecutionLambda.addToRolePolicy(tradeBrokerResponseTopicPolicy);
+    secrets.Secret.fromSecretNameV2(this, "customer-broker-credentials", "customer-broker-credentials").grantRead(tradeExecutionLambda);
 
     // Need to register schema
     const tradeBrokerResponseSchema = new cdk.aws_eventschemas.CfnSchema(this, "tradeBrokerResponseSchema", {
