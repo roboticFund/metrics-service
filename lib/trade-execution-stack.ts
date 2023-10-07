@@ -29,6 +29,7 @@ export class TradeExecutionStack extends cdk.Stack {
       actions: ["SNS:Publish"],
       resources: [tradeBrokerResponseTopic.topicArn],
     });
+
     // Main application to connect to IG broker
     const tradeExecutionLambda = new NodejsFunction(this, "trade-execution-lambda", {
       runtime: lambda.Runtime.NODEJS_LATEST,
