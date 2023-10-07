@@ -14,7 +14,6 @@ export class TradeExecutionStack extends cdk.Stack {
     // Create SNS topic to push new trade events too
     const tradeBrokerResponseTopic = new sns.Topic(this, "tradeBrokerResponseTopic");
     const tradeBrokerResponseTopicPolicy = new iam.PolicyStatement({
-      sid: "Allow access to publish event to topic",
       actions: ["SNS:Publish"],
       resources: [tradeBrokerResponseTopic.topicArn],
     });
