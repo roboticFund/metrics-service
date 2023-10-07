@@ -1,15 +1,25 @@
+import path = require("path");
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
-import path = require("path");
 import { tradeBrokerResponseObject } from "../resources/schema/tradeBrokerResponse";
+import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
 
 export class TradeExecutionStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    // Create CI/CD pipeline
+    const pipeline = new CodePipeline(this, "trade-execution-pipeline", {
+      pipelineName: "trade-execution-pipeline",
+      synth: new ShellStep("Synth", {
+        input: CodePipelineSource.gitHub("roboticFund/trade-execution", "main"),
+        commands: ["npm ci", "npm run build", "npx cdk synth"],
+      }),
+    });
 
     // Create SNS topic to push new trade events too
     const tradeBrokerResponseTopic = new sns.Topic(this, "tradeBrokerResponseTopic");
