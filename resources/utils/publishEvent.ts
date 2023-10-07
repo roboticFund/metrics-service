@@ -14,7 +14,7 @@ export default async function publishNewTradeEvent(body: tradeBrokerResponse): P
   await publishTextPromise
     .then(function (data) {
       console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
-      console.log("MessageID is " + data.MessageId);
+      console.log(`MessageID is ${data.MessageId}`);
     })
     .catch(function (err) {
       console.error(err, err.stack);
