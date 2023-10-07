@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import path = require("path");
 import { tradeBrokerResponse } from "../resources/schema/tradeBrokerResponse";
@@ -10,6 +11,14 @@ export class TradeExecutionStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Create SNS topic to push new trade events too
+    const tradeBrokerResponseTopic = new sns.Topic(this, "tradeBrokerResponseTopic");
+    const tradeBrokerResponseTopicPolicy = new iam.PolicyStatement({
+      sid: "Allow access to publish event to topic",
+      actions: ["SNS:Publish"],
+      resources: [tradeBrokerResponseTopic.topicArn],
+    });
+
     // Main application to connect to IG broker
     const tradeExecutionLambdaIG = new NodejsFunction(this, "trade-execution-lambda-ig", {
       runtime: lambda.Runtime.NODEJS_LATEST,
@@ -17,6 +26,7 @@ export class TradeExecutionStack extends cdk.Stack {
       handler: "handlerIG",
       environment: { BROKER: "IG" },
     });
+    tradeExecutionLambdaIG.addToRolePolicy(tradeBrokerResponseTopicPolicy);
 
     // Main application to connect to CityIndex broker
     const tradeExecutionLambdaCI = new NodejsFunction(this, "trade-execution-lambda-ci", {
@@ -25,8 +35,7 @@ export class TradeExecutionStack extends cdk.Stack {
       handler: "handlerCI",
       environment: { BROKER: "CI" },
     });
-
-    // Need to create SNS topic to push new trade events too
+    tradeExecutionLambdaCI.addToRolePolicy(tradeBrokerResponseTopicPolicy);
 
     // Need to register schema
     const tradeBrokerResponseSchema = new cdk.aws_eventschemas.CfnSchema(this, "tradeBrokerResponseSchema", {
