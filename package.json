@@ -1,8 +1,8 @@
 {
-  "name": "trade-execution",
+  "name": "data-management",
   "version": "0.1.0",
   "bin": {
-    "trade-execution": "bin/trade-execution.js"
+    "data-management": "bin/data-management.js"
   },
   "scripts": {
     "build": "tsc",
