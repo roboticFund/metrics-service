@@ -32,7 +32,7 @@ export class DataManagementStack extends cdk.Stack {
     // });
 
     // // Main application to connect to IG broker
-    // const tradeExecutionLambda = new NodejsFunction(this, "trade-execution-lambda", {
+    // const marketDataLambda = new NodejsFunction(this, "market-data-lambda", {
     //   runtime: lambda.Runtime.NODEJS_LATEST,
     //   entry: path.join(__dirname, `/../resources/app.ts`),
     //   handler: "handler",
