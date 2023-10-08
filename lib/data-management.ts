@@ -24,22 +24,30 @@ export class DataManagementStack extends cdk.Stack {
       }),
     });
 
-    // // Create SNS topic to push new trade events too
-    // const tradeBrokerResponseTopic = new sns.Topic(this, "tradeBrokerResponseTopic");
-    // const tradeBrokerResponseTopicPolicy = new iam.PolicyStatement({
-    //   actions: ["SNS:Publish"],
-    //   resources: [tradeBrokerResponseTopic.topicArn],
-    // });
+    // Create SNS topic to push new trade events too
+    const newMarketDataEventTopic = new sns.Topic(this, "newMarketDataEvent");
+    const newMarketDataEventTopicPolicy = new iam.PolicyStatement({
+      actions: ["SNS:Publish"],
+      resources: [newMarketDataEventTopic.topicArn],
+    });
 
-    // // Main application to connect to IG broker
-    // const marketDataLambda = new NodejsFunction(this, "market-data-lambda", {
-    //   runtime: lambda.Runtime.NODEJS_LATEST,
-    //   entry: path.join(__dirname, `/../resources/app.ts`),
-    //   handler: "handler",
-    //   environment: {},
-    // });
-    // tradeExecutionLambda.addToRolePolicy(tradeBrokerResponseTopicPolicy);
-    // secrets.Secret.fromSecretNameV2(this, "customer-broker-credentials", "customer-broker-credentials").grantRead(tradeExecutionLambda);
+    // Application to connect to get market data
+    const marketDataLambda = new NodejsFunction(this, "market-data-lambda", {
+      runtime: lambda.Runtime.NODEJS_LATEST,
+      entry: path.join(__dirname, `/../resources/market-data/app.ts`),
+      handler: "handler",
+      environment: {},
+    });
+    marketDataLambda.addToRolePolicy(newMarketDataEventTopicPolicy);
+    secrets.Secret.fromSecretNameV2(this, "customer-broker-credentials", "customer-broker-credentials").grantRead(marketDataLambda);
+
+    // Application to listen to events and add data to RDS
+    const dataHandler = new NodejsFunction(this, "data-handler", {
+      runtime: lambda.Runtime.NODEJS_LATEST,
+      entry: path.join(__dirname, `/../resources/data-handler/app.ts`),
+      handler: "handler",
+      environment: {},
+    });
 
     // Schema registry for genericError
     const genericErrorSchema = new cdk.aws_eventschemas.CfnSchema(this, "genericErrorSchema", {
