@@ -2,7 +2,11 @@ import { APIGatewayProxyResult } from "aws-lambda";
 import publishNewTradeEvent from "./utils/publishEvent";
 import getCustomerCredentials from "./utils/getSecrets";
 
-// The event being passed is newTradeEvent. It will contain which account name it originated from
+/****
+  1. Decide which customer the trade event is for
+  2. Load the customer's secrets + trading configuration (position size etc)
+  3. Place trade on N brokers
+  ***/
 export const handler = async (event: any): Promise<APIGatewayProxyResult> => {
   // Load data from secrets manager and route to IG or CI handler
   let customerCredentials = await getCustomerCredentials();
