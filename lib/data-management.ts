@@ -3,6 +3,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as secrets from "aws-cdk-lib/aws-secretsmanager";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -48,6 +49,10 @@ export class DataManagementStack extends cdk.Stack {
       handler: "handler",
       environment: {},
     });
+
+    //Get Topics and subscribe datahandler to them
+    const tradeBrokerResponseTopic = sns.Topic.fromTopicArn(this, "tradeBrokerResponseTopic", "arn:aws:sns:ap-southeast-2:302826945104:TradeExecutionStack-tradeBrokerResponseTopicD9846919-piHtcPICMuyH");
+    tradeBrokerResponseTopic.addSubscription(new subs.LambdaSubscription(dataHandler));
 
     // Schema registry for genericError
     const genericErrorSchema = new cdk.aws_eventschemas.CfnSchema(this, "genericErrorSchema", {
