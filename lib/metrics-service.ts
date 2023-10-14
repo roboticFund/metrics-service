@@ -5,7 +5,6 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as secrets from "aws-cdk-lib/aws-secretsmanager";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
 
@@ -26,46 +25,35 @@ export class DataManagementStack extends cdk.Stack {
     });
 
     // Create SNS topic to push new trade events too
-    const newMarketDataEventTopic = new sns.Topic(this, "newMarketDataEvent");
-    const newMarketDataEventTopicPolicy = new iam.PolicyStatement({
+    const newMetricEventTopic = new sns.Topic(this, "newMetricEvent");
+    const newMetricEventTopicPolicy = new iam.PolicyStatement({
       actions: ["SNS:Publish"],
-      resources: [newMarketDataEventTopic.topicArn],
+      resources: [newMetricEventTopic.topicArn],
     });
 
     // Application to connect to get market data
-    const marketDataLambda = new NodejsFunction(this, "market-data-lambda", {
+    const createMetricLambda = new NodejsFunction(this, "create-metric-lambda", {
       runtime: lambda.Runtime.NODEJS_LATEST,
-      entry: path.join(__dirname, `/../resources/market-data/app.ts`),
+      entry: path.join(__dirname, `/../resources/app.ts`),
       handler: "handler",
       environment: {},
     });
-    marketDataLambda.addToRolePolicy(newMarketDataEventTopicPolicy);
-    secrets.Secret.fromSecretNameV2(this, "customer-broker-credentials", "customer-broker-credentials").grantRead(marketDataLambda);
+    createMetricLambda.addToRolePolicy(newMetricEventTopicPolicy);
 
-    // Application to listen to events and add data to RDS
-    const dataHandler = new NodejsFunction(this, "data-handler", {
-      runtime: lambda.Runtime.NODEJS_LATEST,
-      entry: path.join(__dirname, `/../resources/data-handler/app.ts`),
-      handler: "handler",
-      environment: {},
-    });
+    //Subscribe Lambda to newMarketDataEvent
+    const newMarketDataEventTopic = sns.Topic.fromTopicArn(this, "newMarketDataEvent", "arn:aws:sns:ap-southeast-2:302826945104:DataManagementStack-newMarketDataEvent76B32543-axBYtKvlCazr");
+    newMarketDataEventTopic.addSubscription(new subs.LambdaSubscription(createMetricLambda));
 
-    //Get Topics and subscribe datahandler to them
-    const tradeBrokerResponseTopic = sns.Topic.fromTopicArn(this, "tradeBrokerResponseTopic", "arn:aws:sns:ap-southeast-2:302826945104:TradeExecutionStack-tradeBrokerResponseTopicD9846919-piHtcPICMuyH");
-    tradeBrokerResponseTopic.addSubscription(new subs.LambdaSubscription(dataHandler));
-
-    // Schema registry for genericError
-    const genericErrorSchema = new cdk.aws_eventschemas.CfnSchema(this, "genericErrorSchema", {
+    // Schema registry for newMetricEventSchema
+    const newMetricEventSchema = new cdk.aws_eventschemas.CfnSchema(this, "newMetricEventSchema", {
       registryName: "roboticfund-custom-schema-registry",
       type: "JSONSchemaDraft4",
       content: JSON.stringify({
         datetime: "date-time",
-        accountName: "string",
-        originatingService: "string",
         inputEvent: "string",
-        errorDescription: "string",
+        stochastic: "number",
       }),
-      description: "Schema for to define a generic error in any microservice. Will be stored in the DB according to this schema.",
+      description: "Schema for to define a a new metric event which is the input into the trading decision logic.",
       tags: [],
     });
   }
