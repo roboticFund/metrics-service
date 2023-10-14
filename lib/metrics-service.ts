@@ -33,8 +33,8 @@ export class MetricsServiceStack extends cdk.Stack {
 
     // Application to connect to get market data
     const createMetricLambda = new NodejsFunction(this, "create-metric-lambda", {
-      runtime: lambda.Runtime.NODEJS_LATEST,
-      entry: path.join(__dirname, `/../resources/app.ts`),
+      runtime: lambda.Runtime.PYTHON_3_11,
+      entry: path.join(__dirname, `/../resources/app.py`),
       handler: "handler",
       environment: {},
     });
