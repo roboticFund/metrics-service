@@ -8,7 +8,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
 
-export class DataManagementStack extends cdk.Stack {
+export class MetricsServiceStack extends cdk.Stack {
   appName = "metrics-service";
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -51,7 +51,10 @@ export class DataManagementStack extends cdk.Stack {
       content: JSON.stringify({
         datetime: "date-time",
         inputEvent: "string",
-        stochastic: "number",
+        stochastic_d: "number",
+        macd_d: "number",
+        macd_d_signal: "number",
+        macd_d_hist: "number",
       }),
       description: "Schema for to define a a new metric event which is the input into the trading decision logic.",
       tags: [],
