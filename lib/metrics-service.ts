@@ -5,7 +5,6 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as iam from "aws-cdk-lib/aws-iam";
-import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
 
 export class MetricsServiceStack extends cdk.Stack {
@@ -32,10 +31,10 @@ export class MetricsServiceStack extends cdk.Stack {
     });
 
     // Application to connect to get market data
-    const createMetricLambda = new NodejsFunction(this, "create-metric-lambda", {
+    const createMetricLambda = new lambda.Function(this, "create-metric-lambda", {
       runtime: lambda.Runtime.PYTHON_3_11,
-      entry: path.join(__dirname, `/../resources/app.py`),
-      handler: "handler",
+      code: lambda.Code.fromAsset(path.join(__dirname, `/../resources/`)),
+      handler: "app.handler",
       environment: {},
     });
     createMetricLambda.addToRolePolicy(newMetricEventTopicPolicy);
