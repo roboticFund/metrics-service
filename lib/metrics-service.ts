@@ -10,7 +10,7 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
 
 export class DataManagementStack extends cdk.Stack {
-  appName = "data-management";
+  appName = "metrics-service";
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -20,7 +20,7 @@ export class DataManagementStack extends cdk.Stack {
       pipelineName: `${this.appName}-pipeline`,
       dockerEnabledForSynth: true,
       synth: new ShellStep("Synth", {
-        input: CodePipelineSource.gitHub("roboticFund/data-management", "main"),
+        input: CodePipelineSource.gitHub("roboticFund/metrics-service", "main"),
         commands: ["npm ci", "npm run build", "npx cdk synth"],
       }),
     });

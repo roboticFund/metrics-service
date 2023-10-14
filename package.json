@@ -1,8 +1,8 @@
 {
-  "name": "data-management",
+  "name": "metrics-service",
   "version": "0.1.0",
   "bin": {
-    "data-management": "bin/data-management.js"
+    "metrics-service": "bin/metrics-service.js"
   },
   "scripts": {
     "build": "tsc",

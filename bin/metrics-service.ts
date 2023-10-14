@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
-import { DataManagementStack } from "../lib/data-management";
+import { DataManagementStack } from "../lib/metrics-service";
 
 const app = new cdk.App();
 new DataManagementStack(app, "DataManagementStack", {

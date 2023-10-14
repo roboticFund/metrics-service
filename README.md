@@ -1,4 +1,4 @@
-# Data-management micro service
+# metrics-service
 
 ## Useful commands
 
