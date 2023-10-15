@@ -1,18 +1,23 @@
-import pandas as pd  
+import pandas as pd
+
 
 class AlgoClass:
 
-    def __init__(self, algoTableName, currentPrice, pair, dbConnection):
-        self.algoTableName = algoTableName
-        self.pair = pair
+    def __init__(self, currentTick, dbConnection):
+        self.algoTableName = "metrics"
+        self.currentTick = currentTick
+        self.currentResolution = currentTick.resolution
+        self.currentInstrument = currentTick.instrument
         self.dbConnection = dbConnection
-        self.currentPrice = currentPrice
+        self.currentPrice = currentTick.closePrice
         self.getAndSetData()
-    
+
     def getAndSetData(self):
-        self.limit = 100
-        sql_query = pd.read_sql_query (f"Select EMA_12,EMA_26,EMA_50,EMA_80,macd,macd_new,closePrice,highPrice,lowPrice,stoch_k from {self.algoTableName} where pair='{self.pair}' order by dateTime desc limit {self.limit}", self.dbConnection)
-        self.df = pd.DataFrame(sql_query, columns = ['EMA_12', 'EMA_26', 'EMA_50', 'EMA_80', 'macd', 'macd_new', 'closePrice', 'highPrice', 'lowPrice', 'stoch_k'])
+        # Get 10min, 30 min and 1 day tick data
+        sql_query = self.getSQLQueryToReturnMetrics(
+            self.currentInstrument, self.currentResolution)
+        self.df = pd.DataFrame(sql_query, columns=[
+                               'EMA_12', 'EMA_26', 'EMA_50', 'EMA_80', 'macd', 'macd_new', 'closePrice', 'highPrice', 'lowPrice', 'stoch_k'])
         self.df['closePriceSum'] = self.df['closePrice'].cumsum()
         self.df['stoch_k_sum'] = self.df['stoch_k'].cumsum()
         self.EMA_12 = self.df['EMA_12'].iloc[0]
@@ -22,16 +27,23 @@ class AlgoClass:
         self.macd = self.df['macd'].iloc[0]
         self.macd_new = self.df['macd_new'].iloc[0]
 
-    def RSI(self, period:int):
+    def getSQLQueryToReturnMetrics(self, instrument, resolution) -> pd.DataFrame:
+        return pd.read_sql_query(f"Select          EMA_12, EMA_26, EMA_50, EMA_80, macd, macd_new, closePrice, highPrice, lowPrice, stoch_k \
+                                 from {self.algoTableName} \
+                                 where        pair='{instrument}' and resolution='{resolution}' \
+                                 order by     dateTime desc \
+                                 limit        100", self.dbConnection)
+
+    def RSI(self, period: int):
         delta = self.df['closePrice'].diff(periods=-1)
         gain = delta.where(delta > 0, 0)
         loss = -delta.where(delta < 0, 0)
         avg_gain = gain.rolling(period).mean()
         avg_loss = loss.rolling(period).mean()
         rs = avg_gain / avg_loss
-        return round((100 - (100 / (1 + rs[self.limit-1]))),4)
+        return round((100 - (100 / (1 + rs[self.limit-1]))), 4)
 
-    def EMA(self, period:int):
+    def EMA(self, period: int):
         # First create weighted multipler
         WeightedMultiplier = 2 / (period + 1)
         # Return result as tuple, need to get first value as query returns 1 only
@@ -48,7 +60,7 @@ class AlgoClass:
         # Calculate EMA
         return self.currentPrice * WeightedMultiplier + \
             lastEMA * (1 - WeightedMultiplier)
-    
+
     # This functions return the exponential moving average of the MACD
     def EMA_MACD(self, currentMACD):
         # First create weighted multipler, hard code to period of 9
@@ -64,10 +76,11 @@ class AlgoClass:
         # Calculate EMA
         return (currentMACDNew * WeightedMultiplier) + \
             (self.macd_new * (1 - WeightedMultiplier))
-    
-    def SMA(self, period:int):
+
+    def SMA(self, period: int):
         # Run query
-        sumClose = self.df['closePriceSum'].iloc[period - 2] + self.currentPrice
+        sumClose = self.df['closePriceSum'].iloc[period -
+                                                 2] + self.currentPrice
         # Calculate SMA
         return (sumClose) / period
 
@@ -83,13 +96,14 @@ class AlgoClass:
         L_PERIOD = df['lowPrice'].min()
         H_PERIOD = df['highPrice'].max()
         # Calculate stochastic K first
-        stoch_k = ((self.currentPrice - L_PERIOD) / (H_PERIOD - L_PERIOD)) * 100
+        stoch_k = ((self.currentPrice - L_PERIOD) /
+                   (H_PERIOD - L_PERIOD)) * 100
         stochkSum = self.df['stoch_k_sum'].iloc[1]
         # Calculate stoch d
         stoch_d = (stochkSum + stoch_k) / 3
         # Create return values
         return ({"STOCH_K": stoch_k, "STOCH_D": stoch_d})
-    
+
     # Wiliams %R= Highest High− Close / Highest High − Lowest Low
     # ​
     # where
@@ -102,3 +116,33 @@ class AlgoClass:
         H_PERIOD = df['highPrice'].max()
         # Calculate WilliamsR
         return ((H_PERIOD - self.currentPrice) / (H_PERIOD - L_PERIOD)) * 100 * -1
+
+    def saveTickMetricsToDB(self) -> bool:
+        return True
+
+    def returnDataForNewMetricEvent(self):
+        return {
+            'instrument': self.currentInstrument,
+            'inputEvent': self.currentTick,
+            'tick_10_min': {
+                't0': {
+                    
+                },
+                'tMinus1': {
+
+                },
+                'tMinus2': {
+
+                },
+            },
+            'tick_30_min': {
+                't0': {
+
+                },
+                'tMinus1': {
+
+                },
+                'tMinus2': {
+
+                },
+            }}
