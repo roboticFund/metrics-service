@@ -6,6 +6,7 @@ import * as sns from "aws-cdk-lib/aws-sns";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
+import { standardMetrics } from "./metrics";
 
 export class MetricsServiceStack extends cdk.Stack {
   appName = "metrics-service";
@@ -48,12 +49,18 @@ export class MetricsServiceStack extends cdk.Stack {
       registryName: "roboticfund-custom-schema-registry",
       type: "JSONSchemaDraft4",
       content: JSON.stringify({
-        datetime: "date-time",
+        instrument: "string",
         inputEvent: "string",
-        stochastic_d: "number",
-        macd_d: "number",
-        macd_d_signal: "number",
-        macd_d_hist: "number",
+        tick_10_min: {
+          t0: standardMetrics,
+          tMinus1: standardMetrics,
+          tMinus2: standardMetrics,
+        },
+        tick_30_min: {
+          t0: standardMetrics,
+          tMinus1: standardMetrics,
+          tMinus2: standardMetrics,
+        },
       }),
       description: "Schema for to define a a new metric event which is the input into the trading decision logic.",
       tags: [],
