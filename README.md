@@ -9,7 +9,7 @@
 - `cdk diff` compare deployed stack with current state
 - `cdk synth` emits the synthesized CloudFormation template
 
-## Commands to run locally
+## Commands to run locally (requires Docker)
 
 Reference article - https://docs.aws.amazon.com/lambda/latest/dg/python-image.html
 
