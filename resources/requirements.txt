@@ -1,0 +1,5 @@
+wheel
+mysql-connector-python
+SQLAlchemy
+pandas
+boto3

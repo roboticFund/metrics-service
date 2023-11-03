@@ -31,11 +31,12 @@ export class MetricsServiceStack extends cdk.Stack {
       resources: [newMetricEventTopic.topicArn],
     });
 
-    // Application to connect to get market data
+    // Test new lambda using Docker
     const createMetricLambda = new lambda.Function(this, "create-metric-lambda", {
-      runtime: lambda.Runtime.PYTHON_3_11,
-      code: lambda.Code.fromAsset(path.join(__dirname, `/../resources/`)),
-      handler: "app.handler",
+      runtime: lambda.Runtime.FROM_IMAGE,
+      code: lambda.Code.fromAssetImage(path.join(__dirname, `/../resources/`)),
+      handler: lambda.Handler.FROM_IMAGE,
+      architecture: lambda.Architecture.ARM_64,
       environment: {},
     });
     createMetricLambda.addToRolePolicy(newMetricEventTopicPolicy);

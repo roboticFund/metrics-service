@@ -4,7 +4,7 @@ from utils.dbConnect import dbConnect
 from utils.algoClass import AlgoClass
 
 # Example input event
-event = [{
+event = {
     "instrument": "AUDUSD",
     "resolution": "MINUTE_10",
     "datetime": "2023-01-04 17:00:00",
@@ -14,21 +14,11 @@ event = [{
     "highPrice": 0.68049,
     "lowPrice": 0.68024,
     "volume": 158,
-  },{
-    "instrument": "AUDUSD",
-    "resolution": "MINUTE_30",
-    "datetime": "2023-01-04 17:00:00",
-    "snapshotTimeUTC": "2023-01-04 06:00:00",
-    "openPrice": 0.68049,
-    "closePrice": 0.68025,
-    "highPrice": 0.68049,
-    "lowPrice": 0.68024,
-    "volume": 158,
-  }]
+  }
 
 # This function will listen to a new data event, e.g. new 10 MIN tick data.
 def handler(event, context):
-    
+    print('hello')
     print('request: {}'.format(json.dumps(event)))
     # con = dbConnect()
 

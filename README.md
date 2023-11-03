@@ -8,3 +8,13 @@
 - `cdk deploy` deploy this stack to your default AWS account/region
 - `cdk diff` compare deployed stack with current state
 - `cdk synth` emits the synthesized CloudFormation template
+
+## Commands to run locally
+
+Reference article - https://docs.aws.amazon.com/lambda/latest/dg/python-image.html
+
+```
+cd resources
+docker build --platform linux/amd64 -t metrics-service:test .
+docker run -p 9000:8080 metrics-service:test
+```
