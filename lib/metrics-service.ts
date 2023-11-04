@@ -26,7 +26,7 @@ export class MetricsServiceStack extends cdk.Stack {
       }),
       synthCodeBuildDefaults: {
         buildEnvironment: {
-          buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
+          buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
         },
       },
     });
