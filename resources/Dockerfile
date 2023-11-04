@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 public.ecr.aws/lambda/python:3.11 as build
+FROM --platform=linux/arm64 public.ecr.aws/lambda/python:3.11-arm64 as build
 
 LABEL maintainer="ROBOTICFUND PTY LTD"
 
