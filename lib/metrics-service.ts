@@ -32,9 +32,21 @@ export class MetricsServiceStack extends cdk.Stack {
           buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
         },
       },
-      assetPublishingCodeBuildDefaults: {},
-      selfMutationCodeBuildDefaults: {},
-      codeBuildDefaults: {},
+      assetPublishingCodeBuildDefaults: {
+        buildEnvironment: {
+          buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
+        },
+      },
+      selfMutationCodeBuildDefaults: {
+        buildEnvironment: {
+          buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
+        },
+      },
+      codeBuildDefaults: {
+        buildEnvironment: {
+          buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
+        },
+      },
     });
 
     // Create SNS topic to push new trade events too
