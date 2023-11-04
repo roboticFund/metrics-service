@@ -19,8 +19,8 @@ export class MetricsServiceStack extends cdk.Stack {
     // Create CI/CD pipeline
     // Need to self mutate to ensure ARM64 throughout pipeline and compatability with Docker
     const pipeline = new CodePipeline(this, `${this.appName}-pipeline`, {
-      selfMutation: true,
-      dockerEnabledForSelfMutation: true,
+      selfMutation: false,
+      dockerEnabledForSelfMutation: false,
       pipelineName: `${this.appName}-pipeline`,
       dockerEnabledForSynth: true,
       synth: new ShellStep("Synth", {
