@@ -7,6 +7,7 @@ import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
 import { standardMetrics } from "./metrics";
+import { Platform } from "aws-cdk-lib/aws-ecr-assets";
 
 export class MetricsServiceStack extends cdk.Stack {
   appName = "metrics-service";
@@ -34,7 +35,7 @@ export class MetricsServiceStack extends cdk.Stack {
     // Test new lambda using Docker
     const createMetricLambda = new lambda.Function(this, "create-metric-lambda", {
       runtime: lambda.Runtime.FROM_IMAGE,
-      code: lambda.Code.fromAssetImage(path.join(__dirname, `/../resources/`)),
+      code: lambda.Code.fromAssetImage(path.join(__dirname, `/../resources/`), { platform: Platform.LINUX_ARM64 }),
       handler: lambda.Handler.FROM_IMAGE,
       architecture: lambda.Architecture.ARM_64,
       environment: {},
