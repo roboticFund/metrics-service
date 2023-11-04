@@ -15,6 +15,6 @@ Reference article - https://docs.aws.amazon.com/lambda/latest/dg/python-image.ht
 
 ```
 cd resources
-docker build --platform linux/amd64 -t metrics-service:test .
+docker build -t metrics-service:test .
 docker run -p 9000:8080 metrics-service:test
 ```
