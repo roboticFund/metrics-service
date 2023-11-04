@@ -25,7 +25,7 @@ export class MetricsServiceStack extends cdk.Stack {
       dockerEnabledForSynth: true,
       synth: new ShellStep("Synth", {
         input: CodePipelineSource.gitHub("roboticFund/metrics-service", "main"),
-        commands: ["npm ci", "npm run build", "npx cdk synth", "npx cdk deploy"],
+        commands: ["npm ci", "npm run build", "npx cdk synth"],
       }),
       synthCodeBuildDefaults: {
         buildEnvironment: {
