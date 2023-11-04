@@ -3,6 +3,7 @@ import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as sns from "aws-cdk-lib/aws-sns";
+import * as codebuild from "aws-cdk-lib/aws-codebuild";
 import * as subs from "aws-cdk-lib/aws-sns-subscriptions";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { CodePipeline, CodePipelineSource, ShellStep } from "aws-cdk-lib/pipelines";
@@ -23,6 +24,11 @@ export class MetricsServiceStack extends cdk.Stack {
         input: CodePipelineSource.gitHub("roboticFund/metrics-service", "main"),
         commands: ["npm ci", "npm run build", "npx cdk synth"],
       }),
+      synthCodeBuildDefaults: {
+        buildEnvironment: {
+          buildImage: codebuild.LinuxBuildImage.AMAZON_LINUX_2_5,
+        },
+      },
     });
 
     // Create SNS topic to push new trade events too
