@@ -19,9 +19,9 @@ event = {
 # This function will listen to a new data event, e.g. new 10 MIN tick data.
 def handler(event, context):
     print('hello from metrics lambda 1234567891')
-    print('request: {}'.format(json.dumps(event)))
-
-    eventBody = json.loads(event.Records[0].Sns.Message)
+    print('Event inbound: {}'.format(json.dumps(event)))
+    eventJson = json.loads(event)
+    eventBody = eventJson.Records[0].Sns.Message
     print('event body: {}'.format(json.dumps(eventBody)))
 
     # con = dbConnect()
