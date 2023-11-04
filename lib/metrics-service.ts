@@ -17,7 +17,10 @@ export class MetricsServiceStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create CI/CD pipeline
+    // Need to self mutate to ensure ARM64 throughout pipeline and compatability with Docker
     const pipeline = new CodePipeline(this, `${this.appName}-pipeline`, {
+      selfMutation: true,
+      dockerEnabledForSelfMutation: true,
       pipelineName: `${this.appName}-pipeline`,
       dockerEnabledForSynth: true,
       synth: new ShellStep("Synth", {
@@ -29,6 +32,9 @@ export class MetricsServiceStack extends cdk.Stack {
           buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
         },
       },
+      assetPublishingCodeBuildDefaults: {},
+      selfMutationCodeBuildDefaults: {},
+      codeBuildDefaults: {},
     });
 
     // Create SNS topic to push new trade events too
