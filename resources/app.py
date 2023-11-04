@@ -20,6 +20,9 @@ event = {
 def handler(event, context):
     print('hello')
     print('request: {}'.format(json.dumps(event)))
+
+    eventBody = json.loads(event.Records[0].Sns.Message)
+    print(eventBody)
     # con = dbConnect()
 
     # #Calcualte the metrics for the incoming tick, i.e. new 10 MIN metric tick data
