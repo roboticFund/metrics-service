@@ -15,6 +15,14 @@ Reference article - https://docs.aws.amazon.com/lambda/latest/dg/python-image.ht
 
 ```
 cd resources
+export ENV=dev
 docker build -t metrics-service:test .
 docker run -p 9000:8080 metrics-service:test
+```
+
+### Run unit tests
+
+```
+cd resources
+python -m unittest discover
 ```
