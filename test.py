@@ -1,4 +1,4 @@
-from utils.roboticFundMetrics import RoboticFundMetrics
+from roboticFundMetrics import RoboticFundMetrics
 import pandas as pd
 
 marketData = pd.read_csv('./data/AUDUSD_10MIN.csv')
