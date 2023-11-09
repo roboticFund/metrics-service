@@ -2,12 +2,7 @@
 
 ## Useful commands
 
-- `npm run build` compile typescript to js
-- `npm run watch` watch for changes and compile
-- `npm run test` perform the jest unit tests
-- `cdk deploy` deploy this stack to your default AWS account/region
-- `cdk diff` compare deployed stack with current state
-- `cdk synth` emits the synthesized CloudFormation template
+I've made this a python package following the instructions here = https://github.com/MichaelKim0407/tutorial-pip-package
 
 ## Commands to run locally (requires Docker)
 

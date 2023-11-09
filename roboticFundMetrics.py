@@ -1,3 +1,5 @@
+__version__ = '0.01+RoboticFundMetrics'
+
 import pandas as pd
 from utils.indicators.rsi import calculate_rsi
 from utils.indicators.aws import calculate_awesome_oscillator
