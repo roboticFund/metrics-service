@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 from roboticFundMetrics import __version__
 
@@ -10,5 +10,5 @@ setup(
     author='Roboticfund pty ltd',
     author_email='support@roboticfund.com.au',
 
-    py_modules=['roboticFundMetrics'],
+    packages=find_packages(),
 )
