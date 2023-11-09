@@ -4,20 +4,15 @@
 
 I've made this a python package following the instructions here = https://github.com/MichaelKim0407/tutorial-pip-package
 
-## Commands to run locally (requires Docker)
-
-Reference article - https://docs.aws.amazon.com/lambda/latest/dg/python-image.html
+## Install command
 
 ```
-cd resources
-export ENV=dev
-docker build -t metrics-service:test .
-docker run -p 9000:8080 metrics-service:test
+git remote -v
 ```
 
-### Run unit tests
+Then use the output from ^ as the url below
 
 ```
-cd resources
-python -m unittest discover
+pip install git+ssh://git@github-roboticfund/roboticFund/metrics-service.git#egg=roboticFundMetrics
+
 ```
