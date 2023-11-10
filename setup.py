@@ -10,6 +10,5 @@ setup(
     author='Roboticfund pty ltd',
     author_email='support@roboticfund.com.au',
     # packages=['src.roboticFundMetrics', 'src.utils']
-    packages=find_packages('src'),
-    package_dir={'': 'src'}
+    packages=find_packages(where='src')
 )
