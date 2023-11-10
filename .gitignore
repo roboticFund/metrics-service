@@ -9,3 +9,4 @@ node_modules
 cdk.out
 
 roboticFundMetrics.egg-info/
+__pycache__/
