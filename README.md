@@ -19,6 +19,8 @@ pip install git+ssh://git@github-roboticfund/roboticFund/metrics-service.git#egg
 
 ## Test it works
 
-```
+To confirm that setup.py works properly:
 
+```
+pip install -e .
 ```
