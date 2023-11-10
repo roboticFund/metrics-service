@@ -16,3 +16,9 @@ Then use the output from ^ as the url below
 pip install git+ssh://git@github-roboticfund/roboticFund/metrics-service.git#egg=roboticFundMetrics
 
 ```
+
+## Test it works
+
+```
+
+```
