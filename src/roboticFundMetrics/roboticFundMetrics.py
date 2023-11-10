@@ -1,10 +1,10 @@
 
 
 import pandas as pd
-from utils.indicators.rsi import calculate_rsi
-from utils.indicators.aws import calculate_awesome_oscillator
-from utils.indicators.williamsR import calculate_williamsR
-from utils.indicators.stochastic import calculate_stochastic_k
+from .utils.indicators.rsi import calculate_rsi
+from .utils.indicators.aws import calculate_awesome_oscillator
+from .utils.indicators.williamsR import calculate_williamsR
+from .utils.indicators.stochastic import calculate_stochastic_k
 
 
 class RoboticFundMetrics():
