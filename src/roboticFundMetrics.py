@@ -1,4 +1,4 @@
-__version__ = '0.03+RoboticFundMetrics'
+__version__ = '0.04+RoboticFundMetrics'
 
 import pandas as pd
 from utils.indicators.rsi import calculate_rsi

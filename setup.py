@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, find_namespace_packages
 
 from src.roboticFundMetrics import __version__
 
@@ -9,6 +9,7 @@ setup(
     url='https://github.com/roboticFund/metrics-service',
     author='Roboticfund pty ltd',
     author_email='support@roboticfund.com.au',
-    py_modules=['roboticFundMetrics']
-    # packages=find_packages(),
+    packages=find_packages('python'),
+    package_dir={'src': 'python'},
+    # packages=find_namespace_packages(),
 )
