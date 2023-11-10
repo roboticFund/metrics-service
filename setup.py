@@ -9,7 +9,7 @@ setup(
     url='https://github.com/roboticFund/metrics-service',
     author='Roboticfund pty ltd',
     author_email='support@roboticfund.com.au',
-    # packages=find_packages('python'),
-    # package_dir={'': 'python'},
-    packages=find_namespace_packages(),
+    # packages=['src.roboticFundMetrics', 'src.utils']
+    packages=find_packages('src'),
+    package_dir={'': 'src'}
 )
