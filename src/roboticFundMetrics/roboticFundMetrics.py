@@ -42,3 +42,7 @@ class RoboticFundMetrics():
         self.df['STOCH_K_14'] = calculate_stochastic_k(
             self.df, close_col='closePrice', window=14)
         self.df['STOCH_D_14'] = self.df['STOCH_K_14'].rolling(window=3).mean()
+        self.df['lowestLowPriceStreak'] = self.df.groupby(
+            (self.df['lowPrice'] > self.df['lowPrice'].shift(1)).cumsum()).cumcount()+1
+        self.df['highestHighPriceStreak'] = self.df.groupby(
+            (self.df['highPrice'] < self.df['highPrice'].shift(1)).cumsum()).cumcount()+1
