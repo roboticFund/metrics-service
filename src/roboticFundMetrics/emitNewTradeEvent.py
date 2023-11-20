@@ -1,5 +1,5 @@
 
-from TradeEvent import TradeEvent
+from .TradeEvent import TradeEvent
 import boto3
 
 
