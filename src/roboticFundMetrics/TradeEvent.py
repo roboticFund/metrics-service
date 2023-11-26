@@ -1,6 +1,17 @@
 # Class must match Schema definition in ../lib/trade-decision-engine.ts
 import json
 
+trade_event_schema = {
+    "datetime": "date-time",
+    "inputEvent": "string",
+    "accountName": "string",
+    "instrument": "string",
+    "direction": "string",
+    "action": "string",
+    "stop": "number",
+    "limit": "number"
+}
+
 
 class TradeEvent:
 
