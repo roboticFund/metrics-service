@@ -46,3 +46,5 @@ class RoboticFundMetrics():
             (self.df['lowPrice'] > self.df['lowPrice'].shift(1)).cumsum()).cumcount()+1
         self.df['highestHighPriceStreak'] = self.df.groupby(
             (self.df['highPrice'] < self.df['highPrice'].shift(1)).cumsum()).cumcount()+1
+        self.df['ATR_14'] = self.df['closePrice'].diff(
+        ).abs().rolling(window=14).mean()
