@@ -1,5 +1,6 @@
 wheel
 mysql-connector-python
+pymysql
 SQLAlchemy
 pandas
 boto3
