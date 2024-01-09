@@ -4,3 +4,4 @@ pymysql
 SQLAlchemy
 pandas
 boto3
+requests
