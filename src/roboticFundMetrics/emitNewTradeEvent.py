@@ -9,4 +9,4 @@ def emitNewTradeEvent(datetime, inputEvent, accountName, instrument, direction, 
     tradeEvent = TradeEvent(datetime, inputEvent,
                             accountName, instrument, direction, action, stop, limit)
 
-    return client.publish(TargetArn=os.getenv("TRADE_EVENT_TOPIC_ARN"), Message=tradeEvent.returnSnsFormat(), MessageStructure='json')
+    return client.publish(TargetArn=os.getenv("TRADE_EVENT_TOPIC_ARN"), Message=tradeEvent.returnSnsFormat())
