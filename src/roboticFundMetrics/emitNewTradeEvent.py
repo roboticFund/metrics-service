@@ -8,5 +8,5 @@ def emitNewTradeEvent(datetime, inputEvent, accountName, instrument, direction, 
     client = boto3.client('sns')
     tradeEvent = TradeEvent(datetime, inputEvent,
                             accountName, instrument, direction, action, stop, limit)
-
+    print(f"Trade event is {tradeEvent.returnSnsFormat()}")
     return client.publish(TargetArn=os.getenv("TRADE_EVENT_TOPIC_ARN"), Message=tradeEvent.returnSnsFormat())
