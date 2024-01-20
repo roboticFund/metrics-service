@@ -20,6 +20,8 @@ class Broker_Id_Resolver:
             "CI": "101633", "EOD": "MQG.AU"},
         {"market_id": "NAB", "IG": "AA.D.NAB.CASH.IP",
             "CI": "101634", "EOD": "NAB.AU"},
+        {"market_id": "NST", "IG": "AA.D.NST.CASH.IP",
+            "CI": "400510134", "EOD": "NST.AU"},
         {"market_id": "QAN", "IG": "AA.D.QAN.CASH.IP",
             "CI": "101600", "EOD": "QAN.AU"},
         {"market_id": "RIO", "IG": "AA.D.RIO.CASH.IP",
