@@ -66,8 +66,20 @@ class CI:
             f"Getting market data history from CI for {market_name} for year {year} and month {month}")
         epic = Broker_Id_Resolver(market_name).return_ci_epic()
         print(f"CI market id for {market_name} is {epic}")
-        from_date = datetime.date(year, month, 1).strftime("%s")
-        to_date = datetime.date(year, month+1, 1).strftime("%s")
+        if (month == 12):
+            from_year = year
+            to_year = year + 1
+            from_month = 12
+            to_month = 1
+        else:
+            from_month = month
+            to_month = month+1
+            from_year = year
+            to_year = year
+
+        from_date = datetime.date(from_year, from_month, 1).strftime("%s")
+        to_date = datetime.date(to_year, to_month, 1).strftime("%s")
+
         r = requests.get(
             f"{self.ci_url}/market/{epic}/barhistorybetween?interval=MINUTE&span=15&fromTimestampUTC={from_date}&toTimestampUTC={to_date}", headers=self.headers)
         response_json = r.json()
@@ -91,12 +103,23 @@ class CI:
 
         return market_data
 
-    def store_market_data_history_in_db(instrument, market_name, year=2023):
-        con = dbConnect()
+    def get_one_year_data(self, market_name, year=2023):
         df = pandas.DataFrame()
-        for i in range(1, 12):
+        for i in range(1, 13):
             market_data = ci.get_market_data_history(
                 market_name, year=year, month=i)
+            df = pandas.concat([df, market_data], axis=0)
+
+        df = df.drop_duplicates(
+            subset=['instrument', 'resolution', 'datetime'])
+
+        return df
+
+    def store_multiple_years_in_db(self, market_name, from_year=2023, to_year=2025):
+        con = dbConnect()
+        df = pandas.DataFrame()
+        for i in range(from_year, to_year):
+            market_data = self.get_one_year_data(market_name, i)
             df = pandas.concat([df, market_data], axis=0)
 
         df = df.drop_duplicates(
