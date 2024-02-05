@@ -1,10 +1,10 @@
 class Broker_Id_Resolver:
     market_id_map = [
-        {"market_id": "AUD/USD", "IG": "CS.D.AUDUSD.MINI.IP",
+        {"market_id": "AUDUSD", "IG": "CS.D.AUDUSD.MINI.IP",
             "CI": "400494179", "EOD": ""},
-        {"market_id": "EUR/USD", "IG": "CS.D.EURUSD.MINI.IP",
+        {"market_id": "EURUSD", "IG": "CS.D.EURUSD.MINI.IP",
             "CI": "154290", "EOD": ""},
-        {"market_id": "USD/JPY", "IG": "CS.D.USDJPY.MINI.IP",
+        {"market_id": "USDJPY", "IG": "CS.D.USDJPY.MINI.IP",
             "CI": "154303", "EOD": ""},
         {"market_id": "ANZ", "IG": "AA.D.ANZ.CASH.IP",
             "CI": "101471", "EOD": "ANZ.AU"},
