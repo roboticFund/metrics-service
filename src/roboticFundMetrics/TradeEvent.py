@@ -15,7 +15,7 @@ trade_event_schema = {
 
 class TradeEvent:
 
-    def __init__(self, datetime, inputEvent, accountName, instrument, direction, action, stop, limit, current_price):
+    def __init__(self, datetime, inputEvent, accountName, secretName, instrument, direction, action, stop, limit, current_price):
         self.datetime = datetime
         self.inputEvent = inputEvent
         self.accountName = accountName
@@ -25,12 +25,14 @@ class TradeEvent:
         self.stop = stop
         self.limit = limit
         self.level = current_price
+        self.secretName = secretName
 
     def returnSnsFormat(self):
         return json.dumps({
             "datetime": self.datetime,
             "inputEvent": self.inputEvent,
             "accountName": self.accountName,
+            "secretName": self.secretName,
             "instrument": self.instrument,
             "direction": self.direction,
             "action": self.action,
