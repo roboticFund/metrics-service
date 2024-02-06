@@ -106,7 +106,7 @@ class CI:
     def get_one_year_data(self, market_name, year=2023):
         df = pandas.DataFrame()
         for i in range(1, 13):
-            market_data = ci.get_market_data_history(
+            market_data = self.get_market_data_history(
                 market_name, year=year, month=i)
             df = pandas.concat([df, market_data], axis=0)
 
