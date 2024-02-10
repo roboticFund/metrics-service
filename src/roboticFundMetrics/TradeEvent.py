@@ -15,10 +15,11 @@ trade_event_schema = {
 
 class TradeEvent:
 
-    def __init__(self, datetime, inputEvent, accountName, secretName, instrument, direction, action, stop, limit, current_price, size):
+    def __init__(self, datetime, inputEvent, accountName, algoName, secretName, instrument, direction, action, stop, limit, current_price, size):
         self.datetime = datetime
         self.inputEvent = inputEvent
         self.accountName = accountName
+        self.algoName = algoName
         self.instrument = instrument
         self.direction = direction
         self.action = action
@@ -33,6 +34,7 @@ class TradeEvent:
             "datetime": self.datetime,
             "inputEvent": self.inputEvent,
             "accountName": self.accountName,
+            "algoName": self.algoName,
             "secretName": self.secretName,
             "instrument": self.instrument,
             "direction": self.direction,
