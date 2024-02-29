@@ -1,6 +1,7 @@
 
 
 import pandas as pd
+import numpy as np
 from .utils.indicators.rsi import calculate_rsi
 from .utils.indicators.aws import calculate_awesome_oscillator
 from .utils.indicators.williamsR import calculate_williamsR
@@ -48,3 +49,243 @@ class RoboticFundMetrics():
             (self.df['highPrice'] < self.df['highPrice'].shift(1)).cumsum()).cumcount()+1
         self.df['ATR_14'] = self.df['closePrice'].diff(
         ).abs().rolling(window=14).mean()
+
+    def true_range(self) -> pd.Series:
+        '''
+        calculate_true_range function
+        calculates true range
+        returns: new series
+        '''
+        return self.df.apply(lambda row: max(row['highPrice'] - row['lowPrice'], abs(
+            row['highPrice'] - row['closePrice']), abs(row['lowPrice'] - row['closePrice'])), axis=1)
+
+    def atr(self, length: int) -> pd.Series:
+        '''
+        calculate_adx function
+        calculates average true range
+        returns: new series
+        '''
+        tr0 = abs(self.df["highPrice"] - self.df["lowPrice"])
+        tr1 = abs(self.df["highPrice"] - self.df["closePrice"].shift())
+        tr2 = abs(self.df["lowPrice"] - self.df["closePrice"].shift())
+        tr = [[tr0, tr1, tr2]].max(axis=1)
+        return tr.rolling(window=length).mean()
+
+    def adx(self, period=14) -> pd.Series:
+        '''
+        calculate_adx function
+
+        '''
+        # Step 1: Calculate True Range (TR)
+        tr = self.calculate_true_range()
+
+        # Step 2: Calculate Directional Movement (DM) and Directional Index (DI)
+        self.df['DM_plus'] = self.df['highPrice'] - \
+            self.df['highPrice'].shift(1)
+
+        self.df['DM_minus'] = self.df['lowPrice'].shift(
+            1) - self.df['lowPrice']
+
+        self.df.loc[self.df['DM_plus'] < 0, 'DM_plus'] = 0
+        self.df.loc[self.df['DM_minus'] < 0, 'DM_minus'] = 0
+        self.df['DI_plus'] = 100 * (self.df['DM_plus'].rolling(
+            window=period).mean() / tr.rolling(window=period).mean())
+        self.df['DI_minus'] = 100 * (self.df['DM_minus'].rolling(
+            window=period).mean() / tr.rolling(window=period).mean())
+
+        # Step 3: Calculate Directional Index Difference (DX) and ADX
+        self.df['DX'] = 100 * (abs(self.df['DI_plus'] - self.df['DI_minus']
+                                   ) / (self.df['DI_plus'] + self.df['DI_minus']))
+
+        adx = self.df['DX'].rolling(window=period).mean()
+
+        self.df.drop(['DM_plus', 'DM_minus', 'DI_plus',
+                      'DI_minus', 'DX'], axis=1, inplace=True)
+
+        return adx
+
+    def parabolic_sar(self, initial_acceleration=0.02, acceleration_factor=0.02, max_acceleration_factor=0.2):
+        '''
+        usage:
+        metrics = RoboticFundMetrics(market_data).df.sort_index()
+        metrics[['SAR', 'Trend']] = metrics.calculate_parabolic_sar()
+        '''
+        # Initial values
+        initial_af = initial_acceleration
+        sar = []
+        trend = []
+
+        # Initialize first SAR value
+        if self.df['highPrice'].iloc[1] > self.df['highPrice'].iloc[0]:
+            sar.append(self.df['lowPrice'].iloc[0])
+            trend.append('up')
+        else:
+            sar.append(self.df['highPrice'].iloc[0])
+            trend.append('down')
+
+        # Calculation loop
+        for i in range(1, len(self.df)):
+            if trend[-1] == 'up':
+                if self.df['lowPrice'].iloc[i] < sar[-1]:
+                    trend.append('down')
+                    sar.append(self.df['highPrice'].iloc[i])
+                    acceleration_factor = initial_af
+                else:
+                    trend.append('up')
+                    sar.append(sar[-1] + acceleration_factor *
+                               (self.df['lowPrice'].iloc[i] - sar[-1]))
+                    if self.df['highPrice'].iloc[i] > self.df['highPrice'].iloc[i - 1]:
+                        acceleration_factor = min(
+                            acceleration_factor + initial_af, max_acceleration_factor)
+            else:
+                if self.df['highPrice'].iloc[i] > sar[-1]:
+                    trend.append('up')
+                    sar.append(self.df['lowPrice'].iloc[i])
+                    acceleration_factor = initial_af
+                else:
+                    trend.append('down')
+                    sar.append(sar[-1] - acceleration_factor *
+                               (sar[-1] - self.df['highPrice'].iloc[i]))
+                    if self.df['lowPrice'].iloc[i] < self.df['lowPrice'].iloc[i - 1]:
+                        acceleration_factor = min(
+                            acceleration_factor + initial_af, max_acceleration_factor)
+
+        return sar, trend
+
+    def linear_regression(self, length: int = 21) -> pd.Series:
+        '''
+        Description: Calculates the linear regression of the close price
+
+        Args:
+            length (int): the lookback period (rolling) to run the regression on
+
+        Returns:
+            Series: a float series containing the linear regression values
+        '''
+        m_avg = self.df['closePrice'].rolling(window=length).mean()
+        # calculate bar value
+        highest = self.df['highPrice'].rolling(window=length).max()
+        lowest = self.df['lowPrice'].rolling(window=length).min()
+        m1 = (highest + lowest)/2
+        value = (self.df['closePrice'] - (m1 + m_avg)/2)
+        fit_y = np.array(range(0, length))
+        return round(value.rolling(window=length).apply(lambda x:
+                                                        np.polyfit(fit_y, x, 1)[0] * (length-1) +
+                                                        np.polyfit(fit_y, x, 1)[1], raw=True)*1000, 2)
+
+    def keltner_channel(self, length: int, mult: int) -> pd.Series:
+        '''
+        Description: Calculates the keltner channel
+
+        Args:
+            length (int): the lookback period (rolling) for the moving average
+            mult (int): how many multiples way from the ATR are the kc bands
+
+        Returns:
+            Series: Two float series containing the linear regression values, upper_kc and lower_kc series are returned
+        '''
+        m_avg = self.df['closePrice'].rolling(window=length).mean()
+        atr = self.atr(length)
+        upper_kc = m_avg + atr * mult
+        lower_kc = m_avg - atr * mult
+
+        return upper_kc, lower_kc
+
+    def simulate_trades_intraday(self) -> pd.DataFrame:
+        """ Run a back test for a given trading strategy
+        The dataframe requires the following fields:
+        - snapshotTimeUTC: date
+        - entry_long: boolean
+        - entry_short: boolean
+        - long_profit_take: numeric
+        - short_profit_take: numeric
+        - long_stop: numeric
+        - short_stop: numeric
+        - exit_long: boolean
+        - exit_short: boolean \n
+        It will return the original dataframe + the following new fields:
+        - buyDate: date
+        - sellDate: date
+        - sellPrice: numeric
+        - long_exit_signal: boolean
+        - short_exit_signal: boolean
+        - exit_reason: string
+        """
+
+        # Simulate trades
+        self.df['sellPrice'] = np.NaN
+        self.df['sellDate'] = None
+        self.df['buyDate'] = None
+        self.df['profit'] = np.NaN
+        self.df['long_exit_signal'] = False
+        self.df['short_exit_signal'] = False
+        self.df['exit_reason'] = ''
+
+        # Create two filtered arrays of the long & short entries
+        long_entry_metrics = self.df[self.df['entry_long'] == True]
+        short_entry_metrics = self.df[self.df['entry_short'] == True]
+
+        for long_entry in long_entry_metrics.itertuples():
+            self.df.loc[long_entry[0], 'buyDate'] = long_entry.snapshotTimeUTC
+            self.df.loc[long_entry[0], 'buyPrice'] = long_entry.closePrice
+            scan_forward = self.df[long_entry[0]:]
+            for long_exit in scan_forward.itertuples():
+                limit_level = self.df.loc[long_entry[0], 'long_profit_take']
+                if (long_exit.lowPrice < long_entry.long_stop and long_exit.snapshotTimeUTC != long_entry.snapshotTimeUTC):
+                    sell_price = long_entry.long_stop
+                    self.df.loc[long_entry[0], 'sellPrice'] = sell_price
+                    self.df.loc[long_exit[0], 'long_exit_signal'] = True
+                    self.df.loc[long_entry[0], 'exit_reason'] = 'STOP'
+                    self.df.loc[long_entry[0],
+                                'sellDate'] = long_exit.snapshotTimeUTC
+                    break
+                elif (long_exit.highPrice > limit_level and long_exit.snapshotTimeUTC != long_entry.snapshotTimeUTC):
+                    sell_price = limit_level
+                    self.df.loc[long_entry[0], 'sellPrice'] = sell_price
+                    self.df.loc[long_exit[0], 'long_exit_signal'] = True
+                    self.df.loc[long_entry[0], 'exit_reason'] = 'LIMIT'
+                    self.df.loc[long_entry[0],
+                                'sellDate'] = long_exit.snapshotTimeUTC
+                    break
+                elif (long_exit.exit_long == True and (long_exit.snapshotTimeUTC != long_entry.snapshotTimeUTC)):
+                    sell_price = long_exit.closePrice
+                    self.df.loc[long_entry[0], 'sellPrice'] = sell_price
+                    self.df.loc[long_exit[0], 'long_exit_signal'] = True
+                    self.df.loc[long_entry[0], 'exit_reason'] = 'RULE'
+                    self.df.loc[long_entry[0],
+                                'sellDate'] = long_exit.snapshotTimeUTC
+                    break
+
+        # Simulate short exit
+        for short_entry in short_entry_metrics.itertuples():
+            self.df.loc[short_entry[0],
+                        'buyDate'] = short_entry.snapshotTimeUTC
+            self.df.loc[short_entry[0], 'buyPrice'] = short_entry.closePrice
+            scan_forward = self.df[short_entry[0]:]
+            for short_exit in scan_forward.itertuples():
+                limit_level = self.df.loc[short_entry[0], 'short_profit_take']
+                if (short_exit.highPrice > short_entry.short_stop and (short_exit.snapshotTimeUTC != short_entry.snapshotTimeUTC)):
+                    sell_price = short_entry.short_stop
+                    self.df.loc[short_entry[0], 'sellPrice'] = sell_price
+                    self.df.loc[short_exit[0], 'short_exit_signal'] = True
+                    self.df.loc[short_entry[0], 'exit_reason'] = 'STOP'
+                    self.df.loc[short_entry[0],
+                                'sellDate'] = short_exit.snapshotTimeUTC
+                    break
+                elif (short_exit.lowPrice < limit_level and (short_exit.snapshotTimeUTC != short_entry.snapshotTimeUTC)):
+                    sell_price = limit_level
+                    self.df.loc[short_entry[0], 'sellPrice'] = sell_price
+                    self.df.loc[short_exit[0], 'short_exit_signal'] = True
+                    self.df.loc[short_entry[0], 'exit_reason'] = 'LIMIT'
+                    self.df.loc[short_entry[0],
+                                'sellDate'] = short_exit.snapshotTimeUTC
+                    break
+                elif ((short_exit.exit_short == True) and (short_exit.snapshotTimeUTC != short_entry.snapshotTimeUTC)):
+                    sell_price = short_exit.closePrice
+                    self.df.loc[short_entry[0], 'sellPrice'] = sell_price
+                    self.df.loc[short_exit[0], 'short_exit_signal'] = True
+                    self.df.loc[short_entry[0], 'exit_reason'] = 'RULE'
+                    self.df.loc[short_entry[0],
+                                'sellDate'] = short_exit.snapshotTimeUTC
+                    break
+        return self.df

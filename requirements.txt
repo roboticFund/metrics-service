@@ -5,3 +5,4 @@ SQLAlchemy
 pandas
 boto3
 requests
+numpy
