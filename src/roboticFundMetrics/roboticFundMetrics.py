@@ -50,16 +50,58 @@ class RoboticFundMetrics():
         self.df['ATR_14'] = self.df['closePrice'].diff(
         ).abs().rolling(window=14).mean()
 
-    def true_range(self) -> pd.Series:
+    def set_sma(self, length: int) -> None:
+        '''
+        Description: Calculates the Simple Moving Average
+
+        Args:
+            period (int): 
+
+        Returns:
+            adds column to dataframe 'SMA_{length}' in class variable 'df'
+        '''
+        self.df[f'SMA_{length}'] = self.df['closePrice'].rolling(
+            window=length).mean()
+
+    def set_ema(self, length: int) -> None:
+        '''
+        Description: Calculates the Exoponential Moving Average
+
+        Args:
+            period (int): 
+
+        Returns:
+            adds column to dataframe 'EMA_{length}' in class variable 'df'
+        '''
+        self.df[f'EMA_{length}'] = self.df['closePrice'].ewm(
+            span=length).mean()
+
+    def set_stochastic(self, length_k: int = 14, length_d: int = 3) -> None:
+        '''
+        Description: Calculates the Stochastics
+
+        Args:
+            period (int): 
+
+        Returns:
+            adds column to dataframe 'STOCH_K_{length_k}' in class variable 'df'
+            adds column to dataframe 'STOCH_K_{length_d}' in class variable 'df'
+        '''
+        self.df[f'STOCH_K_{length_k}'] = calculate_stochastic_k(
+            self.df, close_col='closePrice', window=length_k)
+        self.df[f'STOCH_D_{length_d}'] = self.df['STOCH_K_14'].rolling(
+            window=length_d).mean()
+
+    def set_true_range(self) -> None:
         '''
         calculate_true_range function
         calculates true range
         returns: new series
         '''
-        return self.df.apply(lambda row: max(row['highPrice'] - row['lowPrice'], abs(
+        self.df['tr'] = self.df.apply(lambda row: max(row['highPrice'] - row['lowPrice'], abs(
             row['highPrice'] - row['closePrice']), abs(row['lowPrice'] - row['closePrice'])), axis=1)
 
-    def atr(self, length: int) -> pd.Series:
+    def set_atr(self, length: int) -> None:
         '''
         calculate_adx function
         calculates average true range
@@ -69,12 +111,17 @@ class RoboticFundMetrics():
         tr1 = abs(self.df["highPrice"] - self.df["closePrice"].shift())
         tr2 = abs(self.df["lowPrice"] - self.df["closePrice"].shift())
         tr = [[tr0, tr1, tr2]].max(axis=1)
-        return tr.rolling(window=length).mean()
+        self.df['atr'] = tr.rolling(window=length).mean()
 
-    def adx(self, period=14) -> pd.Series:
+    def set_adx(self, period=14) -> None:
         '''
-        calculate_adx function
+        Description: Calculates the ADX
 
+        Args:
+            period (float): 
+
+        Returns:
+            adds column to dataframe 'adx' in class variable 'df'
         '''
         # Step 1: Calculate True Range (TR)
         tr = self.calculate_true_range()
@@ -97,18 +144,23 @@ class RoboticFundMetrics():
         self.df['DX'] = 100 * (abs(self.df['DI_plus'] - self.df['DI_minus']
                                    ) / (self.df['DI_plus'] + self.df['DI_minus']))
 
-        adx = self.df['DX'].rolling(window=period).mean()
+        self.df['adx'] = self.df['DX'].rolling(window=period).mean()
 
         self.df.drop(['DM_plus', 'DM_minus', 'DI_plus',
                       'DI_minus', 'DX'], axis=1, inplace=True)
 
-        return adx
-
-    def parabolic_sar(self, initial_acceleration=0.02, acceleration_factor=0.02, max_acceleration_factor=0.2):
+    def parabolic_sar(self, initial_acceleration=0.02, acceleration_factor=0.02, max_acceleration_factor=0.2) -> None:
         '''
-        usage:
-        metrics = RoboticFundMetrics(market_data).df.sort_index()
-        metrics[['SAR', 'Trend']] = metrics.calculate_parabolic_sar()
+        Description: Calculates the Parabolic Stop and Reverse (SAR) & Trend
+
+        Args:
+            initial_acceleration (float): 
+            acceleration_factor (float): 
+            max_acceleration_factor (float):
+
+        Returns:
+            adds column to dataframe 'sar' in class variable 'df'
+            adds column to dataframe 'sar_trend' in class variable 'df'
         '''
         # Initial values
         initial_af = initial_acceleration
@@ -150,9 +202,10 @@ class RoboticFundMetrics():
                         acceleration_factor = min(
                             acceleration_factor + initial_af, max_acceleration_factor)
 
-        return sar, trend
+        self.df['sar'] = sar
+        self.df['sar_trend'] = trend
 
-    def linear_regression(self, length: int = 21) -> pd.Series:
+    def linear_regression(self, length: int = 21) -> None:
         '''
         Description: Calculates the linear regression of the close price
 
@@ -160,7 +213,7 @@ class RoboticFundMetrics():
             length (int): the lookback period (rolling) to run the regression on
 
         Returns:
-            Series: a float series containing the linear regression values
+            adds column to dataframe 'linear_regression' in class variable 'df'
         '''
         m_avg = self.df['closePrice'].rolling(window=length).mean()
         # calculate bar value
@@ -169,11 +222,11 @@ class RoboticFundMetrics():
         m1 = (highest + lowest)/2
         value = (self.df['closePrice'] - (m1 + m_avg)/2)
         fit_y = np.array(range(0, length))
-        return round(value.rolling(window=length).apply(lambda x:
-                                                        np.polyfit(fit_y, x, 1)[0] * (length-1) +
-                                                        np.polyfit(fit_y, x, 1)[1], raw=True)*1000, 2)
+        self.df['linear_regression'] = round(value.rolling(window=length).apply(lambda x:
+                                                                                np.polyfit(fit_y, x, 1)[0] * (length-1) +
+                                                                                np.polyfit(fit_y, x, 1)[1], raw=True)*1000, 2)
 
-    def keltner_channel(self, length: int, mult: int) -> pd.Series:
+    def set_keltner_channel(self, length: int, mult: int) -> None:
         '''
         Description: Calculates the keltner channel
 
@@ -182,14 +235,51 @@ class RoboticFundMetrics():
             mult (int): how many multiples way from the ATR are the kc bands
 
         Returns:
-            Series: Two float series containing the linear regression values, upper_kc and lower_kc series are returned
+            adds columns to dataframe 'upper_kc' in class variable 'df'
+            adds columns to dataframe 'lower_lc' in class variable 'df'
         '''
         m_avg = self.df['closePrice'].rolling(window=length).mean()
         atr = self.atr(length)
         upper_kc = m_avg + atr * mult
         lower_kc = m_avg - atr * mult
 
-        return upper_kc, lower_kc
+        self.df['upper_kc'] = upper_kc
+        self.df['lower_lc'] = lower_kc
+
+    def set_bollinger_bands(self, length: int, mult: int) -> None:
+        '''
+        Description: Calculates the bollinger bands
+
+        Args:
+            length (int): the lookback period (rolling) for the moving average
+            mult (int): how many multiples way from the ATR are the bollinger bands
+
+        Returns:
+            adds columns to dataframe 'upper_bb' in class variable 'df'
+            adds columns to dataframe 'lower_bb' in class variable 'df'
+        '''
+        m_avg = self.df['closePrice'].rolling(window=length).mean()
+        m_std = self.df['closePrice'].rolling(window=length).std(ddof=0)
+        self.df['upper_bb'] = m_avg + mult * m_std
+        self.df['lower_bb'] = m_avg - mult * m_std
+
+    def set_squeeze(self, length_bb, mult_bb, length_kc, mult_kc) -> None:
+        '''
+        Description: Determines if squeeze is on
+
+        Args:
+            length_bb (int): the lookback period (rolling) for the moving average bollinger band
+            mult_bb (int): how many multiples way from the ATR are the bollinger bands
+            length_kc (int): the lookback period (rolling) for the moving average keltner channel
+            mult_kc (int): how many multiples way from the ATR are the keltner channel bands
+
+        Returns:
+            adds boolean column to dataframe 'squeeze_on' in class variable 'df'
+        '''
+        self.set_bollinger_bands(length_bb, mult_bb)
+        self.set_keltner_channel(length_kc, mult_kc)
+        self.df['squeeze_on'] = (self.df['upper_bb'] < self.df['upper_kc']) & (
+            self.df['lower_bb'] > self.df['lower_kc'])
 
     def simulate_trades_intraday(self) -> pd.DataFrame:
         """ Run a back test for a given trading strategy
