@@ -384,3 +384,130 @@ class RoboticFundMetrics():
                                 'sellDate'] = short_exit.snapshotTimeUTC
                     break
         return self.df
+
+    def add_more_stats(self, notional_value: float) -> None:
+        '''
+        Description: Calculates simulation stats
+
+        Args:
+            notional_value (float): notional value of each trade
+
+        Returns:
+            adds float column to dataframe 'long_profit' in class variable 'df'
+            adds float column to dataframe 'short_profit' in class variable 'df'
+            adds float column to dataframe 'profit' in class variable 'df'
+            adds int column to dataframe 'long_counter' in class variable 'df'
+            adds int column to dataframe 'short_counter' in class variable 'df'
+            adds float column to dataframe 'profit_streak' in class variable 'df'
+            adds float column to dataframe 'drawdown' in class variable 'df'
+        '''
+        # Calculate profit
+        self.df['long_profit'] = np.where(
+            self.df['entry_long'] == True, (self.df['sellPrice']/self.df['buyPrice'] - 1)*notional_value, 0)
+
+        self.df['short_profit'] = np.where(
+            self.df['entry_short'] == True, (1 - self.df['sellPrice']/self.df['buyPrice'])*notional_value, 0)
+
+        self.df['profit'] = self.df['long_profit'] + self.df['short_profit']
+        self.df['profit'] = self.df['profit'].replace(0, np.NaN)
+
+        # Calculate num positions opened
+        long_counter = 0
+        short_counter = 0
+        profit_streak = 0
+        drawdown = 0
+        self.df['long_counter'] = 0
+        self.df['short_counter'] = 0
+        self.df['profit_streak'] = 0
+        self.df['drawdown'] = 0
+        for row in self.df.itertuples():
+            if (row.profit > 0):
+                profit_streak = profit_streak + row.profit
+                self.df.loc[row[0], 'profit_streak'] = profit_streak
+                drawdown = 0
+            elif (row.profit < 0):
+                drawdown = drawdown + row.profit
+                self.df.loc[row[0], 'drawdown'] = drawdown
+                profit_streak = 0
+
+            if row.entry_long == True:
+                long_counter = long_counter + 1
+                self.df.loc[row[0], 'long_counter'] = long_counter
+            if row.entry_short == True:
+                short_counter = short_counter + 1
+                self.df.loc[row[0], 'short_counter'] = short_counter
+            if row.short_exit_signal == True:
+                short_counter = 0
+            if row.long_exit_signal == True:
+                long_counter = 0
+
+    def print_stats(self, notional_value: int = 1000000, margin_per_trade: float = 0.04):
+        '''
+        Description: Print simulation back test results to screen
+
+        Args:
+            notional_value (float): notional value of each trade
+            margin_per_trade (float): margin % of each trade
+
+        Returns:
+            adds float column to dataframe 'hours_held' in class variable 'df'
+        '''
+        self.add_more_stats(notional_value)
+
+        # Print trade level data
+        print(self.df[['openPrice', 'lowPrice', 'highPrice', 'closePrice', 'entry_long', 'long_stop', 'long_profit_take', 'entry_short', 'short_stop',
+                       'short_profit_take', 'sellDate', 'sellPrice', 'profit', 'drawdown', 'exit_reason']].to_string())
+
+        # Output summary stats
+        self.df['buyDate'] = pd.to_datetime(self.df['buyDate'])
+        self.df['sellDate'] = pd.to_datetime(self.df['sellDate'])
+        self.df['hours_held'] = (self.df['sellDate'] -
+                                 self.df['buyDate']) / pd.Timedelta(hours=1)
+        print(
+            f"Notional value per trade ${notional_value}. I.e. without leverage.")
+        print(f"At 0.4% margin, the margin requirement is $5,000 per trade.")
+        print(f"Instrument is {self.df['instrument'].iloc[0]}")
+        print(f"----------------------------------------------------------------------------------------------------------------------")
+        print(
+            f"Total profit is ${round(self.df['profit'].sum(), 1)}")
+        print(
+            f"Average profit per trade ${round(self.df['profit'].mean(), 1)}")
+        print(
+            f"Total number of trades {self.df[abs(self.df.profit) > 0].shape[0]}")
+        print(
+            f"Mean hold time is {round(self.df['hours_held'].mean(), 0)} hours")
+        print(
+            f"Max hold time is {round(self.df['hours_held'].max(), 0)} hours on {self.df.loc[self.df['hours_held'].idxmax()]['snapshotTimeUTC']}")
+        win_rate = round((self.df[self.df.profit > 0].shape[0] /
+                          self.df[abs(self.df.profit) > 0].shape[0]) * 100, 1)
+        print(f"Win rate is {win_rate}%")
+        print(f"----------------------------------------------------------------------------------------------------------------------")
+        print(
+            f"{round(self.df.groupby(self.df.index.year)['profit'].sum(),1)}")
+        print(f"----------------------------------------------------------------------------------------------------------------------")
+        print(f"Max number of long positions {self.df['long_counter'].max()}")
+        print(
+            f"Max number of short positions {self.df['short_counter'].max()}")
+        print(
+            f"Biggest single loss ${round(self.df['profit'].min(),0)} on {self.df.loc[self.df['profit'].idxmin()]['snapshotTimeUTC']}")
+        print(
+            f"Biggest single profit ${round(self.df['profit'].max(),0)} on {self.df.loc[self.df['profit'].idxmax()]['snapshotTimeUTC']}")
+        print(f"Max drawdown ${round(self.df['drawdown'].min(),0)}")
+        print(
+            f"Largest profit streak ${round(self.df['profit_streak'].max(),0)}")
+        # Add breakdown by Long or short
+        print(
+            f"Long profit ${round(self.df[self.df['entry_long']==True]['profit'].sum(),1)}")
+        print(
+            f"Short profit ${round(self.df[self.df['entry_short']==True]['profit'].sum(),1)}")
+
+        # Calculate what Account balance is required to trade this
+        if self.df['short_counter'].max() > self.df['long_counter'].max():
+            max_holds = self.df['short_counter'].max()
+        else:
+            max_holds = self.df['long_counter'].max()
+        account_balance_need = margin_per_trade + max_holds * margin_per_trade + \
+            abs(round(self.df['drawdown'].min(), 0))
+        print(
+            f"Minimum account balance required ${account_balance_need}")
+        print(f"----------------------------------------------------------------------------------------------------------------------")
