@@ -129,7 +129,7 @@ class RoboticFundMetrics():
             adds column to dataframe 'adx' in class variable 'df'
         '''
         # Step 1: Calculate True Range (TR)
-        tr = self.calculate_true_range()
+        self.set_true_range()
 
         # Step 2: Calculate Directional Movement (DM) and Directional Index (DI)
         self.df['DM_plus'] = self.df['highPrice'] - \
@@ -141,9 +141,9 @@ class RoboticFundMetrics():
         self.df.loc[self.df['DM_plus'] < 0, 'DM_plus'] = 0
         self.df.loc[self.df['DM_minus'] < 0, 'DM_minus'] = 0
         self.df['DI_plus'] = 100 * (self.df['DM_plus'].rolling(
-            window=period).mean() / tr.rolling(window=period).mean())
+            window=period).mean() / self.df['tr'].rolling(window=period).mean())
         self.df['DI_minus'] = 100 * (self.df['DM_minus'].rolling(
-            window=period).mean() / tr.rolling(window=period).mean())
+            window=period).mean() / self.df['tr'].rolling(window=period).mean())
 
         # Step 3: Calculate Directional Index Difference (DX) and ADX
         self.df['DX'] = 100 * (abs(self.df['DI_plus'] - self.df['DI_minus']
