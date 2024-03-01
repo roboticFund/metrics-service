@@ -239,9 +239,9 @@ class RoboticFundMetrics():
             adds columns to dataframe 'lower_lc' in class variable 'df'
         '''
         m_avg = self.df['closePrice'].rolling(window=length).mean()
-        atr = self.atr(length)
-        upper_kc = m_avg + atr * mult
-        lower_kc = m_avg - atr * mult
+        self.set_atr(length)
+        upper_kc = m_avg + self.df['atr'] * mult
+        lower_kc = m_avg - self.df['atr'] * mult
 
         self.df['upper_kc'] = upper_kc
         self.df['lower_lc'] = lower_kc
