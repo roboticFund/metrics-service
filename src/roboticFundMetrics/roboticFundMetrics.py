@@ -241,7 +241,7 @@ class RoboticFundMetrics():
 
         Returns:
             adds columns to dataframe 'upper_kc' in class variable 'df'
-            adds columns to dataframe 'lower_lc' in class variable 'df'
+            adds columns to dataframe 'lower_kc' in class variable 'df'
         '''
         m_avg = self.df['closePrice'].rolling(window=length).mean()
         self.set_atr(length)
@@ -249,7 +249,7 @@ class RoboticFundMetrics():
         lower_kc = m_avg - self.df['atr'] * mult
 
         self.df['upper_kc'] = upper_kc
-        self.df['lower_lc'] = lower_kc
+        self.df['lower_kc'] = lower_kc
 
     def set_bollinger_bands(self, length: int, mult: int) -> None:
         '''
