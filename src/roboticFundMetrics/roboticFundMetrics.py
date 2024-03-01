@@ -94,24 +94,29 @@ class RoboticFundMetrics():
 
     def set_true_range(self) -> None:
         '''
-        calculate_true_range function
-        calculates true range
-        returns: new series
+        Description: Calculates the True Range
+
+        Args:
+            length (int): 
+
+        Returns:
+            adds column to dataframe 'tr' in class variable 'df'
         '''
         self.df['tr'] = self.df.apply(lambda row: max(row['highPrice'] - row['lowPrice'], abs(
             row['highPrice'] - row['closePrice']), abs(row['lowPrice'] - row['closePrice'])), axis=1)
 
     def set_atr(self, length: int) -> None:
         '''
-        calculate_adx function
-        calculates average true range
-        returns: new series
+        Description: Calculates the Average True Range
+
+        Args:
+            length (int): 
+
+        Returns:
+            adds column to dataframe 'atr' in class variable 'df'
         '''
-        tr0 = abs(self.df["highPrice"] - self.df["lowPrice"])
-        tr1 = abs(self.df["highPrice"] - self.df["closePrice"].shift())
-        tr2 = abs(self.df["lowPrice"] - self.df["closePrice"].shift())
-        tr = [[tr0, tr1, tr2]].max(axis=1)
-        self.df['atr'] = tr.rolling(window=length).mean()
+        self.set_true_range()
+        self.df['atr'] = self.df['tr'].rolling(window=length).mean()
 
     def set_adx(self, period=14) -> None:
         '''
@@ -149,7 +154,7 @@ class RoboticFundMetrics():
         self.df.drop(['DM_plus', 'DM_minus', 'DI_plus',
                       'DI_minus', 'DX'], axis=1, inplace=True)
 
-    def parabolic_sar(self, initial_acceleration=0.02, acceleration_factor=0.02, max_acceleration_factor=0.2) -> None:
+    def set_parabolic_sar(self, initial_acceleration=0.02, acceleration_factor=0.02, max_acceleration_factor=0.2) -> None:
         '''
         Description: Calculates the Parabolic Stop and Reverse (SAR) & Trend
 
@@ -205,7 +210,7 @@ class RoboticFundMetrics():
         self.df['sar'] = sar
         self.df['sar_trend'] = trend
 
-    def linear_regression(self, length: int = 21) -> None:
+    def set_linear_regression(self, length: int = 21) -> None:
         '''
         Description: Calculates the linear regression of the close price
 
