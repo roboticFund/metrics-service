@@ -354,7 +354,7 @@ class RoboticFundMetrics():
         self.df['short_profit_take'] = self.df['closePrice'] - \
             limit_pips_short*one_pip
 
-    def set_limits_from_atr(self, mult_long: int, mult_short: int) -> None:
+    def set_limits_from_atr(self, atr_length: int, mult_long: int, mult_short: int) -> None:
         '''
         Description: Calculate the limit price for long and short positions
 
@@ -367,6 +367,7 @@ class RoboticFundMetrics():
             adds float column to dataframe 'long_profit_take' in class variable 'df'
             adds float column to dataframe 'short_profit_take' in class variable 'df'
         '''
+        self.set_atr(atr_length)
         self.df['long_profit_take'] = self.df['closePrice'] + \
             self.df['atr']*mult_long
         self.df['short_profit_take'] = self.df['closePrice'] - \
