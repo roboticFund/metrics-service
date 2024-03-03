@@ -286,6 +286,92 @@ class RoboticFundMetrics():
         self.df['squeeze_on'] = (self.df['upper_bb'] < self.df['upper_kc']) & (
             self.df['lower_bb'] > self.df['lower_kc'])
 
+    def set_stops_from_pips(self, stop_pips_long: int, stop_pips_short: int, one_pip: float) -> None:
+        '''
+        Description: Calculate the stop price for long and short positions
+
+        Args:
+            stop_pips_long (int): number of pips below the entry price
+            stop_pips_short (int): number of pips above the entry price
+            one_pip (int): pip size
+
+        Returns:
+            adds float column to dataframe 'long_stop' in class variable 'df'
+            adds float column to dataframe 'short_stop' in class variable 'df'
+        '''
+        self.df['long_stop'] = self.df['closePrice'] - stop_pips_long*one_pip
+        self.df['short_stop'] = self.df['closePrice'] + stop_pips_short*one_pip
+
+    def set_stops_from_atr(self, atr_length: int, mult_long: int, mult_short: int) -> None:
+        '''
+        Description: Calculate the stop price for long and short positions
+
+        Args:
+            stop_pips_long (int): number of pips below the entry price
+            stop_pips_short (int): number of pips above the entry price
+            one_pip (int): pip size
+
+        Returns:
+            adds float column to dataframe 'long_stop' in class variable 'df'
+            adds float column to dataframe 'short_stop' in class variable 'df'
+        '''
+        self.set_atr(atr_length)
+        self.df['long_stop'] = self.df['closePrice'] - self.df['atr']*mult_long
+        self.df['short_stop'] = self.df['closePrice'] + \
+            self.df['atr']*mult_short
+
+    def set_stops_from_spikes(self, look_back_period: int) -> None:
+        '''
+        Description: Calculate the stop price for long and short positions
+
+        Args:
+            look_back_period (int): how far to look back for peaks
+
+        Returns:
+            adds float column to dataframe 'long_stop' in class variable 'df'
+            adds float column to dataframe 'short_stop' in class variable 'df'
+        '''
+        self.df['long_stop'] = self.df['lowPrice'].rolling(
+            window=look_back_period).min()
+        self.df['short_stop'] = self.df['highPrice'].rolling(
+            window=look_back_period).max()
+
+    def set_limits(self, limit_pips_long: int, limit_pips_short: int, one_pip: float) -> None:
+        '''
+        Description: Calculate the limit price for long and short positions
+
+        Args:
+            stop_pips_long (int): number of pips above the entry price
+            stop_pips_short (int): number of pips below the entry price
+            one_pip (int): pip size
+
+        Returns:
+            adds float column to dataframe 'long_profit_take' in class variable 'df'
+            adds float column to dataframe 'short_profit_take' in class variable 'df'
+        '''
+        self.df['long_profit_take'] = self.df['closePrice'] + \
+            limit_pips_long*one_pip
+        self.df['short_profit_take'] = self.df['closePrice'] - \
+            limit_pips_short*one_pip
+
+    def set_limits_from_atr(self, mult_long: int, mult_short: int) -> None:
+        '''
+        Description: Calculate the limit price for long and short positions
+
+        Args:
+            stop_pips_long (int): number of pips above the entry price
+            stop_pips_short (int): number of pips below the entry price
+            one_pip (int): pip size
+
+        Returns:
+            adds float column to dataframe 'long_profit_take' in class variable 'df'
+            adds float column to dataframe 'short_profit_take' in class variable 'df'
+        '''
+        self.df['long_profit_take'] = self.df['closePrice'] + \
+            self.df['atr']*mult_long
+        self.df['short_profit_take'] = self.df['closePrice'] - \
+            self.df['atr']*mult_short
+
     def simulate_trades_intraday(self) -> pd.DataFrame:
         """ Run a back test for a given trading strategy
         The dataframe requires the following fields:
