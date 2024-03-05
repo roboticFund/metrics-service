@@ -61,9 +61,9 @@ class MarketData:
 
         return market_data
 
-    def unix_time_millis(self, dt: datetime) -> int:
+    def unix_time_seconds(self, dt: datetime) -> int:
         epoc = datetime.utcfromtimestamp(0)
-        return (dt-epoc).total_seconds() * 1000
+        return round((dt-epoc).total_seconds())
 
     def return_intraday_market_data_from_EOD(self, instrument: str, resolution: str, exchange: str = 'AU', from_date: str = '2000-01-01', to_date: str = '2024-12-31') -> pandas.DataFrame:
         '''
@@ -81,9 +81,9 @@ class MarketData:
         # Set market data parameters
         myformat = "%Y-%m-%d"
         start_date = datetime.strptime(from_date, myformat)
-        from_utc = self.unix_time_millis(start_date)
+        from_utc = self.unix_time_seconds(start_date)
         end_date = datetime.strptime(to_date, myformat)
-        to_utc = self.unix_time_millis(end_date)
+        to_utc = self.unix_time_seconds(end_date)
 
         # EOD Historical
         url = f"https://eodhd.com/api/intraday/{instrument}.{exchange}?interval={resolution}&api_token={os.getenv('EOD_API_KEY')}&fmt=json&from={from_utc}&to={to_utc}"
