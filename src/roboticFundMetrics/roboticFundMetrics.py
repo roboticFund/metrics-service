@@ -373,6 +373,48 @@ class RoboticFundMetrics():
         self.df['short_profit_take'] = self.df['closePrice'] - \
             self.df['atr']*mult_short
 
+    def calcualte_fibonacci_retracement(self, threshold_large_step: int) -> None:
+        fibonacci_calculated = False
+        reset_index = None
+        fibonacci_levels = {}
+        rows_since_large_event = 0
+        large_step_threshold = False
+
+        for index, row in self.df.iterrows():
+            rolling_high = self.df.loc[reset_index:index, 'highPrice'].max()
+            rolling_low = self.df.loc[reset_index:index, 'lowPrice'].min()
+            difference = abs(rolling_high - rolling_low) * 100000
+
+            if (difference > threshold_large_step).any():
+                rows_since_large_event = 0
+                large_step_threshold = True
+                reset_index = index
+                fibonacci_calculated = False
+
+            if large_step_threshold == False:
+                rows_since_large_event += 1
+                for level, value in fibonacci_levels.items():
+                    self.df.at[index, f'Fibonacci Level {level}'] = value
+
+            if large_step_threshold == True and fibonacci_calculated == False:
+                rows_since_large_event += 1
+                # Ensure Fibonacci levels are calculated only once post-large step change
+                if reset_index == index:
+                    fibonacci_levels = {}
+                    # Calculate Fibonacci levels for 0 and 1
+                    fibonacci_levels[0] = rolling_low
+                    fibonacci_levels[1] = rolling_high
+                    # You can adjust the range to calculate more Fibonacci levels if needed
+                    for i in range(2, 6):
+                        fibonacci_levels[i] = fibonacci_levels[i - 1] - (
+                            fibonacci_levels[i - 1] - fibonacci_levels[i - 2]) / 1.618
+                    # Store fibonacci levels in dataframe
+                    for level, value in fibonacci_levels.items():
+                        self.df.at[index, f'Fibonacci Level {level}'] = value
+
+                large_step_threshold = False
+                fibonacci_calculated = True
+
     def simulate_trades_intraday(self) -> pd.DataFrame:
         """ Run a back test for a given trading strategy
         The dataframe requires the following fields:
