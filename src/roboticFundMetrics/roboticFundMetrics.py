@@ -377,29 +377,30 @@ class RoboticFundMetrics():
         fibonacci_calculated = False
         reset_index = None
         fibonacci_levels = {}
-        rows_since_large_event = 0
         large_step_threshold = False
+        fib_count = 0
 
         for index, row in self.df.iterrows():
             rolling_high = self.df.loc[reset_index:index, 'highPrice'].max()
             rolling_low = self.df.loc[reset_index:index, 'lowPrice'].min()
             difference = abs(rolling_high - rolling_low) * 100000
+            fib_count += 1
 
             if (difference > threshold_large_step).any():
-                rows_since_large_event = 0
                 large_step_threshold = True
                 reset_index = index
                 fibonacci_calculated = False
 
             if large_step_threshold == False:
-                rows_since_large_event += 1
+                self.df.at[index, 'Fib_Step'] = 0
                 for level, value in fibonacci_levels.items():
                     self.df.at[index, f'Fibonacci Level {level}'] = value
 
             if large_step_threshold == True and fibonacci_calculated == False:
-                rows_since_large_event += 1
                 # Ensure Fibonacci levels are calculated only once post-large step change
                 if reset_index == index:
+                    self.df.at[index, 'Fib_Step'] = 1
+                    fib_count = 0  # Reset Fibonacci calculation counter after recalculating
                     fibonacci_levels = {}
                     # Calculate Fibonacci levels for 0 and 1
                     fibonacci_levels[0] = rolling_low
@@ -414,6 +415,17 @@ class RoboticFundMetrics():
 
                 large_step_threshold = False
                 fibonacci_calculated = True
+            # Update Fib_Count column for all rows
+            self.df.at[index, 'Fib_Count'] = fib_count
+
+    def set_stops_from_max(self, max_loss: int) -> None:
+        '''
+        Description: Calculate the stop price for max_loss
+
+
+        '''
+        self.df['short_stop'] = abs(
+            (max_loss / (5000 / 0.004))+1)*(self.df['closePrice'])
 
     def simulate_trades_intraday(self) -> pd.DataFrame:
         """ Run a back test for a given trading strategy
