@@ -1,60 +1,59 @@
+import boto3
 import requests
+from .utils.market_id_resolver import Broker_Id_Resolver
 
 
 class IG:
 
     content_type = "application/json; charset=UTF-8"
     accept = "application/json; charset=UTF-8"
-    access_token = ""
 
     def __init__(self, secret_name):
         self.secret_name = secret_name
-        self.account_id = "test"
-        self.api_key = "to-do"
+        self.get_secret_from_aws()
         self.connect()
 
-    def set_headers(self, access_token=None):
+    def get_secret_from_aws(self):
+        session = boto3.session.Session()
+        client = session.client(
+            service_name='secretsmanager', region_name="ap-southeast-2")
+        get_secret_value_response = client.get_secret_value(
+            SecretId=self.secret_name
+        )
+        secrets = eval(get_secret_value_response['SecretString'])
+        self.account_id = secrets['account_id']
+        self.api_key = secrets['api_key']
+        self.password = secrets['password']
+        self.url = secrets['url']
+
+    def set_headers(self):
         self.headers = {
             "Version": "3",
             "Content-Type": self.content_type,
             "Accept": self.accept,
             "X-IG-API-KEY": self.api_key,
-            "Authorization": f"Bearer {access_token}",
-            "IG-ACCOUNT-ID": self.account_id
+            "Authorization": f"Bearer {self.access_token}",
+            "IG-ACCOUNT-ID": self.cfd_account_id
         }
 
     def connect(self):
-        # Connect with oAuth, POST /session v3
-        # POST /session v3 returns OAuth access and refresh tokens which the user can pass in subsequent API requests via the Authorization header, e.g.:
-        # Authorization : Bearer 5d1ea445-568b-4748-ab47-af9b982bfb74
-        # The access token only identifies the client so users should also pass an IG-ACCOUNT-ID header to specify the account the request applies to, e.g.:
-        # IG-ACCOUNT-ID : PZVI2
-        # The access token is only valid for a limited period of time (e.g. 60 seconds) specified by the login response.
-        #        "oauthToken": {
-        #                "access_token": "702f6580-25c7-4c04-931d-6000efa824f8",
-        #                "refresh_token": "a9cec2d7-fd01-4d16-a2dd-7427ef6a471d",
-        #                "scope": "profile",
-        #                "token_type": "Bearer",
-        #                "expires_in": "60"
-        #        }
+        print(f"Attempting to connect to IG Account {self.account_id}")
         r = requests.post(
-            'https://demo-api.ig.com/gateway/deal/session', json={
-                "identifier": "to-do",
-                "password": "to-do",
-                "IG-ACCOUNT-ID": self.account_id
+            f"{self.url}/session", json={
+                "identifier": self.account_id,
+                "password": self.password
             }, headers={"Version": "3", "Content-Type": self.content_type, "Accept": self.accept, "X-IG-API-KEY": self.api_key})
         print(f"IG connect attempt REST response code {r.status_code}")
         response = r.json()
-        self.set_headers(response['oauthToken']['access_token'])
+        self.access_token = response['oauthToken']['access_token']
+        self.cfd_account_id = response['accountId']
+        self.set_headers()
 
-    def get_latest_price(self, epic) -> float:
+    def get_latest_offer_price(self, market_name) -> float:
+        epic = Broker_Id_Resolver(market_name).return_ig_epic()
         print(f"Getting latest price from IG for {epic}")
-        print(self.headers)
         r = requests.get(
-            f"https://demo-api.ig.com/gateway/deal/prices/{epic}", headers=self.headers)
+            f"{self.url}/markets/{epic}", headers=self.headers)
+        print(f"IG fetch price REST response code {r.status_code}")
         response_json = r.json()
-        print(response_json)
-
-
-ig = IG("test")
-ig.get_latest_price("AA.D.ANZ.CASH.IP")
+        return response_json['snapshot']['offer']
