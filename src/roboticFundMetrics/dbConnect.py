@@ -14,6 +14,7 @@ class db_secret:
 
 def get_secrets() -> db_secret:
     secret_name = os.environ.get("DB_SECRET_NAME")
+    print(f"Fetching secrets from secret - {secret_name}")
     region_name = "ap-southeast-2"
 
     session = boto3.session.Session()
@@ -24,6 +25,7 @@ def get_secrets() -> db_secret:
     )
 
     secrets = eval(get_secret_value_response['SecretString'])
+    print(f"Successfully fetched secret from {secret_name}")
     return db_secret(secrets['host'], secrets['username'], secrets['password'])
 
 
@@ -38,7 +40,7 @@ def dbConnect():
         return create_engine(db_connection_str)
 
     else:
-        print('Connecting to remote DB...')
         db = get_secrets()
+        print('Connecting to remote DB...')
         db_connection_str = f'mysql+pymysql://{db.user}:{db.password}@{db.host}/{db.database}'
         return create_engine(db_connection_str)
