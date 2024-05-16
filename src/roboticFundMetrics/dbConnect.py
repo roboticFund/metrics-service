@@ -43,4 +43,4 @@ def dbConnect():
         db = get_secrets()
         print('Connecting to remote DB...')
         db_connection_str = f'mysql+pymysql://{db.user}:{db.password}@{db.host}/{db.database}'
-        return create_engine(db_connection_str)
+        return create_engine(db_connection_str, pool_pre_ping=True)
