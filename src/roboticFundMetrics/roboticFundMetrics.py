@@ -374,49 +374,34 @@ class RoboticFundMetrics():
             self.df['atr']*mult_short
 
     def calcualte_fibonacci_retracement(self, threshold_large_step: int) -> None:
-        fibonacci_calculated = False
         reset_index = None
         fibonacci_levels = {}
-        large_step_threshold = False
         fib_count = 0
 
         for index, row in self.df.iterrows():
             rolling_high = self.df.loc[reset_index:index, 'highPrice'].max()
             rolling_low = self.df.loc[reset_index:index, 'lowPrice'].min()
             difference = abs(rolling_high - rolling_low) * 100000
-            fib_count += 1
 
-            if (difference > threshold_large_step).any():
-                large_step_threshold = True
+            if difference > threshold_large_step:
                 reset_index = index
-                fibonacci_calculated = False
-
-            if large_step_threshold == False:
+                fib_count = 0
+                fibonacci_levels = {}
+                fibonacci_levels[0] = rolling_low
+                fibonacci_levels[1] = rolling_high
+                for i in range(2, 6):
+                    fibonacci_levels[i] = fibonacci_levels[i - 1] - (
+                        fibonacci_levels[i - 1] - fibonacci_levels[i - 2]) / 1.618
+                self.df.at[index, 'Fib_Step'] = 1
+                for level, value in fibonacci_levels.items():
+                    self.df.at[index, f'Fibonacci Level {level}'] = value
+            else:
                 self.df.at[index, 'Fib_Step'] = 0
                 for level, value in fibonacci_levels.items():
                     self.df.at[index, f'Fibonacci Level {level}'] = value
 
-            if large_step_threshold == True and fibonacci_calculated == False:
-                # Ensure Fibonacci levels are calculated only once post-large step change
-                if reset_index == index:
-                    self.df.at[index, 'Fib_Step'] = 1
-                    fib_count = 0  # Reset Fibonacci calculation counter after recalculating
-                    fibonacci_levels = {}
-                    # Calculate Fibonacci levels for 0 and 1
-                    fibonacci_levels[0] = rolling_low
-                    fibonacci_levels[1] = rolling_high
-                    # You can adjust the range to calculate more Fibonacci levels if needed
-                    for i in range(2, 6):
-                        fibonacci_levels[i] = fibonacci_levels[i - 1] - (
-                            fibonacci_levels[i - 1] - fibonacci_levels[i - 2]) / 1.618
-                    # Store fibonacci levels in dataframe
-                    for level, value in fibonacci_levels.items():
-                        self.df.at[index, f'Fibonacci Level {level}'] = value
-
-                large_step_threshold = False
-                fibonacci_calculated = True
-            # Update Fib_Count column for all rows
             self.df.at[index, 'Fib_Count'] = fib_count
+            fib_count += 1
 
     def set_stops_from_max(self, max_loss: int) -> None:
         '''
