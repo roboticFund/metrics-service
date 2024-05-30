@@ -44,6 +44,48 @@ class CI:
         response = r.json()
         self.set_headers(response['Session'])
 
+    def return_ci_resolution(self, resolution) -> str:
+        if resolution == "MINUTE_10":
+            return "10"
+        elif resolution == "MINUTE_15":
+            return "15"
+        elif resolution == "MINUTE_30":
+            return "30"
+        else:
+            return ""
+
+    def get_latest_tick(self, market_name, resolution):
+        print(
+            f"Getting latest price from CI for {market_name} for resolution {resolution}")
+        epic = Broker_Id_Resolver(market_name).return_ci_epic()
+        print(f"CI market id for {market_name} is {epic}")
+        ciRes = self.return_ci_resolution(resolution)
+        r = requests.get(
+            f"{self.ci_url}/market/{epic}/barhistory?interval=MINUTE&span={ciRes}&PriceBars=1&priceType=ASK", headers=self.headers)
+        response_json = r.json()
+        print(f"CI responded with this data {response_json}")
+        market_data = pandas.DataFrame.from_dict(response_json['PriceBars'])
+        if market_data.empty:
+            return
+        else:
+            market_data['BarDateUTCNumber'] = market_data['BarDate'].str.extract(
+                '(\d+)')
+            market_data['snapshotTimeUTC'] = pandas.to_datetime(
+                market_data['BarDateUTCNumber'], utc=True, unit='ms').dt.round('5min')
+            market_data = market_data.rename(columns={
+                'Open': 'openPrice', 'High': 'highPrice', 'Low': 'lowPrice', 'Close': 'closePrice', 'volume': 'volume'})
+            market_data['instrument'] = market_name
+            market_data['datetime'] = market_data['snapshotTimeUTC']
+            market_data['insertStamp'] = datetime.datetime.now()
+            market_data['resolution'] = resolution
+            market_data = market_data[market_data['openPrice'].notna()]
+            market_data = market_data.set_index('snapshotTimeUTC')
+
+            # Drop unwanted columns
+            market_data = market_data.drop(
+                ['BarDateUTCNumber', 'BarDate'], axis=1)
+            return market_data
+
     def get_latest_price(self, market_name) -> float:
         print(f"Getting latest price from CI for {market_name}")
         epic = Broker_Id_Resolver(market_name).return_ci_epic()
@@ -81,27 +123,30 @@ class CI:
         to_date = datetime.date(to_year, to_month, 1).strftime("%s")
 
         r = requests.get(
-            f"{self.ci_url}/market/{epic}/barhistorybetween?interval=MINUTE&span=15&fromTimestampUTC={from_date}&toTimestampUTC={to_date}", headers=self.headers)
+            f"{self.ci_url}/market/{epic}/barhistorybetween?interval=MINUTE&span=30&fromTimestampUTC={from_date}&toTimestampUTC={to_date}", headers=self.headers)
         response_json = r.json()
         market_data = pandas.DataFrame.from_dict(response_json['PriceBars'])
-        market_data['BarDateUTCNumber'] = market_data['BarDate'].str.extract(
-            '(\d+)')
-        market_data['snapshotTimeUTC'] = pandas.to_datetime(
-            market_data['BarDateUTCNumber'], utc=True, unit='ms').dt.round('5min')
-        market_data = market_data.rename(columns={
-                                         'Open': 'openPrice', 'High': 'highPrice', 'Low': 'lowPrice', 'Close': 'closePrice', 'volume': 'volume'})
-        market_data['instrument'] = market_name
-        market_data['datetime'] = market_data['snapshotTimeUTC']
-        market_data['insertStamp'] = datetime.datetime.now()
-        market_data['resolution'] = "15M"
-        market_data = market_data[market_data['openPrice'].notna()]
-        market_data = market_data.set_index('snapshotTimeUTC')
-        print(market_data.head())
-        # Drop unwanted columns
-        market_data = market_data.drop(
-            ['BarDateUTCNumber', 'BarDate'], axis=1)
+        if market_data.empty:
+            pass
+        else:
+            market_data['BarDateUTCNumber'] = market_data['BarDate'].str.extract(
+                '(\d+)')
+            market_data['snapshotTimeUTC'] = pandas.to_datetime(
+                market_data['BarDateUTCNumber'], utc=True, unit='ms').dt.round('5min')
+            market_data = market_data.rename(columns={
+                'Open': 'openPrice', 'High': 'highPrice', 'Low': 'lowPrice', 'Close': 'closePrice', 'volume': 'volume'})
+            market_data['instrument'] = market_name
+            market_data['datetime'] = market_data['snapshotTimeUTC']
+            market_data['insertStamp'] = datetime.datetime.now()
+            market_data['resolution'] = "MINUTE_30"
+            market_data = market_data[market_data['openPrice'].notna()]
+            market_data = market_data.set_index('snapshotTimeUTC')
 
-        return market_data
+            # Drop unwanted columns
+            market_data = market_data.drop(
+                ['BarDateUTCNumber', 'BarDate'], axis=1)
+
+            return market_data
 
     def get_one_year_data(self, market_name, year=2023):
         df = pandas.DataFrame()
@@ -115,7 +160,7 @@ class CI:
 
         return df
 
-    def store_multiple_years_in_db(self, market_name, from_year=2023, to_year=2025):
+    def store_multiple_years_in_db(self, market_name, from_year=2022, to_year=2024):
         con = dbConnect()
         df = pandas.DataFrame()
         for i in range(from_year, to_year):
@@ -125,3 +170,8 @@ class CI:
         df = df.drop_duplicates(
             subset=['instrument', 'resolution', 'datetime'])
         df.to_sql('market_data', con, if_exists='append')
+
+
+# ci = CI()
+# ci.store_multiple_years_in_db("USDJPY")
+# data = ci.get_latest_tick("AUDUSD", "MINUTE_15")
