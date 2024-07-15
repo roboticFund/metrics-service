@@ -434,10 +434,10 @@ class RoboticFundMetrics():
         """
 
         # Simulate trades
-        self.df['sellPrice'] = np.NaN
+        self.df['sellPrice'] = np.nan
         self.df['sellDate'] = None
         self.df['buyDate'] = None
-        self.df['profit'] = np.NaN
+        self.df['profit'] = np.nan
         self.df['long_exit_signal'] = False
         self.df['short_exit_signal'] = False
         self.df['exit_reason'] = ''
@@ -535,7 +535,7 @@ class RoboticFundMetrics():
             self.df['entry_short'] == True, (1 - self.df['sellPrice']/self.df['buyPrice'])*notional_value, 0)
 
         self.df['profit'] = self.df['long_profit'] + self.df['short_profit']
-        self.df['profit'] = self.df['profit'].replace(0, np.NaN)
+        self.df['profit'] = self.df['profit'].replace(0, np.nan)
 
         # Calculate num positions opened
         long_counter = 0
