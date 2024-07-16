@@ -511,6 +511,143 @@ class RoboticFundMetrics():
                     break
         return self.df
 
+    def set_df_values(self, buyDate, sell_price, reason, sell_date):
+        self.df.loc[buyDate, 'sellPrice'] = sell_price
+        self.df.loc[sell_date, 'short_exit_signal'] = True
+        self.df.loc[buyDate, 'exit_reason'] = reason
+        self.df.loc[buyDate, 'sellDate'] = sell_date
+
+    def simulate_trades_intraday_v2(self) -> None:
+        """ Run a back test for a given trading strategy
+        The dataframe requires the following fields:
+        - snapshotTimeUTC: date
+        - entry_long: boolean
+        - entry_short: boolean
+        - long_profit_take: numeric
+        - short_profit_take: numeric
+        - long_stop: numeric
+        - short_stop: numeric
+        - exit_long: boolean
+        - exit_short: boolean \n
+        It will return the original dataframe + the following new fields:
+        - buyDate: date
+        - sellDate: date
+        - sellPrice: numeric
+        - long_exit_signal: boolean
+        - short_exit_signal: boolean
+        - exit_reason: string
+        """
+
+        # Convert to numpy array for speed
+        data_2 = self.df[['snapshotTimeUTC', 'entry_long', 'entry_short', 'openPrice',
+                          'lowPrice', 'highPrice', 'closePrice', 'long_stop', 'short_stop', 'long_profit_take', 'short_profit_take', 'exit_long', 'exit_short']]
+        np_array = data_2.to_numpy()
+
+        # Simulate trades
+        self.df['sellPrice'] = np.nan
+        self.df['sellDate'] = None
+        self.df['buyDate'] = None
+        self.df['profit'] = np.nan
+        self.df['long_exit_signal'] = False
+        self.df['short_exit_signal'] = False
+        self.df['exit_reason'] = ''
+
+        for idx, x in enumerate(np_array):
+            if x[1] == True:  # Long entry
+                buyDate = x[0]
+                buyPrice = x[6]
+                long_stop = x[7]
+                long_profit_take = x[9]
+                self.df.loc[buyDate, 'buyDate'] = buyDate
+                self.df.loc[buyDate, 'buyPrice'] = buyPrice
+
+                # Check if stop is triggered
+                time_stamps = np_array[idx+1:idx+500][:, 0]
+                close_prices = np_array[idx+1:idx+500][:, 6]
+                low_prices = np_array[idx+1:idx+500][:, 4]
+                high_prices = np_array[idx+1:idx+500][:, 5]
+                long_exits = np_array[idx+1:idx+500][:, 11]
+                try:
+                    stop_triggered = np.where(low_prices < long_stop)
+                    stop_trigger_idx = stop_triggered[0][0]
+                except:
+                    stop_trigger_idx = 498
+                try:
+                    limit_triggered = np.where(high_prices >= long_profit_take)
+                    limit_trigger_idx = limit_triggered[0][0]
+                except:
+                    limit_trigger_idx = 498
+                try:
+                    rule_triggered = np.where(long_exits == True)
+                    rule_triggered_idx = rule_triggered[0][0]
+                except:
+                    rule_triggered_idx = 498
+
+                # Choose which trigger comes first
+                if stop_trigger_idx < limit_trigger_idx and stop_trigger_idx < rule_triggered_idx:
+                    sell_date = time_stamps[stop_trigger_idx]
+                    sell_price = long_stop
+                    reason = 'STOP'
+                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                elif limit_trigger_idx < rule_triggered_idx:
+                    sell_date = time_stamps[limit_trigger_idx]
+                    sell_price = long_profit_take
+                    reason = 'LIMIT'
+                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                else:
+                    sell_date = time_stamps[rule_triggered_idx]
+                    sell_price = close_prices[rule_triggered_idx]
+                    reason = 'RULE'
+                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+
+            if x[2] == True:  # Short entry
+                buyDate = x[0]
+                buyPrice = x[6]
+                short_stop = x[8]
+                short_profit_take = x[10]
+                self.df.loc[buyDate, 'buyDate'] = buyDate
+                self.df.loc[buyDate, 'buyPrice'] = buyPrice
+
+                # Check if stop is triggered
+                time_stamps = np_array[idx+1:idx+500][:, 0]
+                close_prices = np_array[idx+1:idx+500][:, 6]
+                high_prices = np_array[idx+1:idx+500][:, 5]
+                low_prices = np_array[idx+1:idx+500][:, 4]
+                short_exits = np_array[idx+1:idx+500][:, 12]
+
+                try:
+                    stop_triggered = np.where(high_prices >= short_stop)
+                    stop_trigger_idx = stop_triggered[0][0]
+                except:
+                    stop_trigger_idx = 498
+                try:
+                    limit_triggered = np.where(low_prices <= short_profit_take)
+                    limit_trigger_idx = limit_triggered[0][0]
+                except:
+                    limit_trigger_idx = 498
+                try:
+                    rule_triggered = np.where(short_exits == True)
+                    rule_triggered_idx = rule_triggered[0][0]
+                except:
+                    rule_triggered_idx = 498
+
+                # Choose which trigger comes first
+                if stop_trigger_idx < limit_trigger_idx and stop_trigger_idx < rule_triggered_idx:
+                    sell_date = time_stamps[stop_trigger_idx]
+                    sell_price = short_stop
+                    reason = 'STOP'
+                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                elif limit_trigger_idx < rule_triggered_idx:
+                    sell_date = time_stamps[limit_trigger_idx]
+                    sell_price = short_profit_take
+                    reason = 'LIMIT'
+                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                else:
+                    sell_date = time_stamps[rule_triggered_idx]
+                    sell_price = close_prices[rule_triggered_idx]
+                    reason = 'RULE'
+                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+
     def add_more_stats(self, notional_value: float) -> None:
         '''
         Description: Calculates simulation stats
