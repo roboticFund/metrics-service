@@ -763,7 +763,8 @@ class RoboticFundMetrics():
             f"Long profit ${round(self.df[self.df['entry_long']==True]['profit'].sum(),1)}")
         print(
             f"Short profit ${round(self.df[self.df['entry_short']==True]['profit'].sum(),1)}")
-
+        print(
+            f"{round(self.df.groupby(self.df.exit_reason)['profit'].count(),1)}")
         # Calculate what Account balance is required to trade this
         if self.df['short_counter'].max() > self.df['long_counter'].max():
             max_holds = self.df['short_counter'].max()
