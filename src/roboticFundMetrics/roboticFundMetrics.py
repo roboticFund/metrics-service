@@ -584,12 +584,12 @@ class RoboticFundMetrics():
                     rule_triggered_idx = 498
 
                 # Choose which trigger comes first
-                if stop_trigger_idx < limit_trigger_idx and stop_trigger_idx < rule_triggered_idx:
+                if stop_trigger_idx <= limit_trigger_idx and stop_trigger_idx <= rule_triggered_idx:
                     sell_date = time_stamps[stop_trigger_idx]
                     sell_price = long_stop
                     reason = 'STOP'
                     self.set_df_values(buyDate, sell_price, reason, sell_date)
-                elif limit_trigger_idx < rule_triggered_idx:
+                elif limit_trigger_idx <= rule_triggered_idx:
                     sell_date = time_stamps[limit_trigger_idx]
                     sell_price = long_profit_take
                     reason = 'LIMIT'
@@ -632,12 +632,12 @@ class RoboticFundMetrics():
                     rule_triggered_idx = 498
 
                 # Choose which trigger comes first
-                if stop_trigger_idx < limit_trigger_idx and stop_trigger_idx < rule_triggered_idx:
+                if stop_trigger_idx <= limit_trigger_idx and stop_trigger_idx <= rule_triggered_idx:
                     sell_date = time_stamps[stop_trigger_idx]
                     sell_price = short_stop
                     reason = 'STOP'
                     self.set_df_values(buyDate, sell_price, reason, sell_date)
-                elif limit_trigger_idx < rule_triggered_idx:
+                elif limit_trigger_idx <= rule_triggered_idx:
                     sell_date = time_stamps[limit_trigger_idx]
                     sell_price = short_profit_take
                     reason = 'LIMIT'
