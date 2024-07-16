@@ -511,11 +511,14 @@ class RoboticFundMetrics():
                     break
         return self.df
 
-    def set_df_values(self, buyDate, sell_price, reason, sell_date):
+    def set_df_values(self, buyDate, sell_price, reason, sell_date, direction):
         self.df.loc[buyDate, 'sellPrice'] = sell_price
-        self.df.loc[sell_date, 'short_exit_signal'] = True
         self.df.loc[buyDate, 'exit_reason'] = reason
         self.df.loc[buyDate, 'sellDate'] = sell_date
+        if direction == 'SHORT':
+            self.df.loc[sell_date, 'short_exit_signal'] = True
+        else:
+            self.df.loc[sell_date, 'long_exit_signal'] = True
 
     def simulate_trades_intraday_v2(self) -> None:
         """ Run a back test for a given trading strategy
@@ -588,17 +591,20 @@ class RoboticFundMetrics():
                     sell_date = time_stamps[stop_trigger_idx]
                     sell_price = long_stop
                     reason = 'STOP'
-                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                    self.set_df_values(buyDate, sell_price,
+                                       reason, sell_date, 'LONG')
                 elif limit_trigger_idx <= rule_triggered_idx:
                     sell_date = time_stamps[limit_trigger_idx]
                     sell_price = long_profit_take
                     reason = 'LIMIT'
-                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                    self.set_df_values(buyDate, sell_price,
+                                       reason, sell_date, 'LONG')
                 else:
                     sell_date = time_stamps[rule_triggered_idx]
                     sell_price = close_prices[rule_triggered_idx]
                     reason = 'RULE'
-                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                    self.set_df_values(buyDate, sell_price,
+                                       reason, sell_date, 'LONG')
 
             if x[2] == True:  # Short entry
                 buyDate = x[0]
@@ -636,17 +642,20 @@ class RoboticFundMetrics():
                     sell_date = time_stamps[stop_trigger_idx]
                     sell_price = short_stop
                     reason = 'STOP'
-                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                    self.set_df_values(buyDate, sell_price,
+                                       reason, sell_date, 'SHORT')
                 elif limit_trigger_idx <= rule_triggered_idx:
                     sell_date = time_stamps[limit_trigger_idx]
                     sell_price = short_profit_take
                     reason = 'LIMIT'
-                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                    self.set_df_values(buyDate, sell_price,
+                                       reason, sell_date, 'SHORT')
                 else:
                     sell_date = time_stamps[rule_triggered_idx]
                     sell_price = close_prices[rule_triggered_idx]
                     reason = 'RULE'
-                    self.set_df_values(buyDate, sell_price, reason, sell_date)
+                    self.set_df_values(buyDate, sell_price,
+                                       reason, sell_date, 'SHORT')
 
     def add_more_stats(self, notional_value: float) -> None:
         '''
