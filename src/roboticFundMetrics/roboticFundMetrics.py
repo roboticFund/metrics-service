@@ -55,7 +55,7 @@ class RoboticFundMetrics():
         Description: Calculates the Simple Moving Average
 
         Args:
-            period (int): 
+            period (int):
 
         Returns:
             adds column to dataframe 'SMA_{length}' in class variable 'df'
@@ -68,7 +68,7 @@ class RoboticFundMetrics():
         Description: Calculates the Exoponential Moving Average
 
         Args:
-            period (int): 
+            period (int):
 
         Returns:
             adds column to dataframe 'EMA_{length}' in class variable 'df'
@@ -81,7 +81,7 @@ class RoboticFundMetrics():
         Description: Calculates the Stochastics
 
         Args:
-            period (int): 
+            period (int):
 
         Returns:
             adds column to dataframe 'STOCH_K_{length_k}' in class variable 'df'
@@ -97,7 +97,7 @@ class RoboticFundMetrics():
         Description: Calculates the True Range
 
         Args:
-            length (int): 
+            length (int):
 
         Returns:
             adds column to dataframe 'tr' in class variable 'df'
@@ -110,7 +110,7 @@ class RoboticFundMetrics():
         Description: Calculates the Average True Range
 
         Args:
-            length (int): 
+            length (int):
 
         Returns:
             adds column to dataframe 'atr' in class variable 'df'
@@ -123,7 +123,7 @@ class RoboticFundMetrics():
         Description: Calculates the ADX
 
         Args:
-            period (float): 
+            period (float):
 
         Returns:
             adds column to dataframe 'adx' in class variable 'df'
@@ -159,8 +159,8 @@ class RoboticFundMetrics():
         Description: Calculates the Parabolic Stop and Reverse (SAR) & Trend
 
         Args:
-            initial_acceleration (float): 
-            acceleration_factor (float): 
+            initial_acceleration (float):
+            acceleration_factor (float):
             max_acceleration_factor (float):
 
         Returns:
@@ -674,11 +674,11 @@ class RoboticFundMetrics():
             adds float column to dataframe 'drawdown' in class variable 'df'
         '''
         # Calculate profit
-        self.df['long_profit'] = np.where(
-            self.df['entry_long'] == True, (self.df['sellPrice']/self.df['buyPrice'] - 1)*notional_value, 0)
+        self.df['long_profit'] = np.where(self.df['entry_long'] == True, ((
+            self.df['sellPrice'] - self.df['buyPrice']) * notional_value * (1/self.df['sellPrice'])), 0)
 
         self.df['short_profit'] = np.where(
-            self.df['entry_short'] == True, (1 - self.df['sellPrice']/self.df['buyPrice'])*notional_value, 0)
+            self.df['entry_short'] == True, ((self.df['buyPrice'] - self.df['sellPrice']) * notional_value * (1/self.df['sellPrice'])), 0)
 
         self.df['profit'] = self.df['long_profit'] + self.df['short_profit']
         self.df['profit'] = self.df['profit'].replace(0, np.nan)
