@@ -657,12 +657,12 @@ class RoboticFundMetrics():
                     self.set_df_values(buyDate, sell_price,
                                        reason, sell_date, 'SHORT')
 
-    def add_more_stats(self, notional_value: float) -> None:
+    def add_more_stats(self) -> None:
         '''
         Description: Calculates simulation stats
 
         Args:
-            notional_value (float): notional value of each trade
+            None
 
         Returns:
             adds float column to dataframe 'long_profit' in class variable 'df'
@@ -673,12 +673,13 @@ class RoboticFundMetrics():
             adds float column to dataframe 'profit_streak' in class variable 'df'
             adds float column to dataframe 'drawdown' in class variable 'df'
         '''
+
         # Calculate profit
         self.df['long_profit'] = np.where(self.df['entry_long'] == True, ((
-            self.df['sellPrice'] - self.df['buyPrice']) * notional_value * (1/self.df['sellPrice'])), 0)
+            self.df['sellPrice'] - self.df['buyPrice']) * self.notional_value * (1/self.df['sellPrice'])), 0)
 
         self.df['short_profit'] = np.where(
-            self.df['entry_short'] == True, ((self.df['buyPrice'] - self.df['sellPrice']) * notional_value * (1/self.df['sellPrice'])), 0)
+            self.df['entry_short'] == True, ((self.df['buyPrice'] - self.df['sellPrice']) * self.notional_value * (1/self.df['sellPrice'])), 0)
 
         self.df['profit'] = self.df['long_profit'] + self.df['short_profit']
         self.df['profit'] = self.df['profit'].replace(0, np.nan)
@@ -713,7 +714,16 @@ class RoboticFundMetrics():
             if row.long_exit_signal == True:
                 long_counter = 0
 
-    def print_stats(self, notional_value: int = 1000000, margin_per_trade: float = 0.04):
+    def set_notional_value(self, position_size: float = 1):
+        if (self.df['instrument'].iloc[0] == 'AUDUSD'):
+            self.notional_value = 10000*position_size
+        elif (self.df['instrument'].iloc[0] == 'USDJPY'):
+            # $10,000USD per point converted to AUD approx. $15k
+            self.notional_value = 15000*position_size
+        else:
+            self.notional_value = 10000*position_size
+
+    def print_stats(self, position_size: float = 1, margin_per_trade: float = 0.04):
         '''
         Description: Print simulation back test results to screen
 
@@ -724,7 +734,8 @@ class RoboticFundMetrics():
         Returns:
             adds float column to dataframe 'hours_held' in class variable 'df'
         '''
-        self.add_more_stats(notional_value)
+        self.set_notional_value(position_size)
+        self.add_more_stats()
 
         # Print trade level data
         print(self.df[['openPrice', 'lowPrice', 'highPrice', 'closePrice', 'entry_long', 'long_stop', 'long_profit_take', 'entry_short', 'short_stop',
@@ -736,7 +747,7 @@ class RoboticFundMetrics():
         self.df['hours_held'] = (self.df['sellDate'] -
                                  self.df['buyDate']) / pd.Timedelta(hours=1)
         print(
-            f"Notional value per trade ${notional_value}. I.e. without leverage.")
+            f"Notional value per trade ${self.notional_value}. I.e. without leverage.")
         print(f"At 0.4% margin, the margin requirement is $5,000 per trade.")
         print(f"Instrument is {self.df['instrument'].iloc[0]}")
         print(f"----------------------------------------------------------------------------------------------------------------------")
