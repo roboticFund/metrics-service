@@ -574,17 +574,17 @@ class RoboticFundMetrics():
                     stop_triggered = np.where(low_prices < long_stop)
                     stop_trigger_idx = stop_triggered[0][0]
                 except:
-                    stop_trigger_idx = 498
+                    stop_trigger_idx = len(long_exits) - 1
                 try:
                     limit_triggered = np.where(high_prices >= long_profit_take)
                     limit_trigger_idx = limit_triggered[0][0]
                 except:
-                    limit_trigger_idx = 498
+                    limit_trigger_idx = len(long_exits) - 1
                 try:
                     rule_triggered = np.where(long_exits == True)
                     rule_triggered_idx = rule_triggered[0][0]
                 except:
-                    rule_triggered_idx = 498
+                    rule_triggered_idx = len(long_exits) - 1
 
                 # Choose which trigger comes first
                 if stop_trigger_idx <= limit_trigger_idx and stop_trigger_idx <= rule_triggered_idx:
@@ -625,17 +625,17 @@ class RoboticFundMetrics():
                     stop_triggered = np.where(high_prices >= short_stop)
                     stop_trigger_idx = stop_triggered[0][0]
                 except:
-                    stop_trigger_idx = 498
+                    stop_trigger_idx = len(short_exits) - 1
                 try:
                     limit_triggered = np.where(low_prices <= short_profit_take)
                     limit_trigger_idx = limit_triggered[0][0]
                 except:
-                    limit_trigger_idx = 498
+                    limit_trigger_idx = len(short_exits) - 1
                 try:
                     rule_triggered = np.where(short_exits == True)
                     rule_triggered_idx = rule_triggered[0][0]
                 except:
-                    rule_triggered_idx = 498
+                    rule_triggered_idx = len(short_exits) - 1
 
                 # Choose which trigger comes first
                 if stop_trigger_idx <= limit_trigger_idx and stop_trigger_idx <= rule_triggered_idx:
