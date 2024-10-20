@@ -827,7 +827,7 @@ class RoboticFundMetrics():
     def set_monthly_profit_score(self) -> None:
         # Profit per month
         self.profit_per_month = self.df[['snapshotTimeUTC', 'profit']].groupby(pd.Grouper(key='snapshotTimeUTC', axis=0,
-                                                                                          freq='M')).sum()
+                                                                                          freq='ME')).sum()
         self.win_rate_per_month = round((self.profit_per_month[self.profit_per_month.profit > 0].shape[0] /
                                          self.profit_per_month[abs(self.profit_per_month.profit) > 0].shape[0]) * 100, 1)
 
