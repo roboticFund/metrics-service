@@ -9,6 +9,15 @@ from .utils.indicators.stochastic import calculate_stochastic_k
 
 
 class RoboticFundMetrics():
+    position_size: int
+    win_rate: float
+    max_drawdown: float
+    max_profit_streak: float
+    average_gain_weighted_to_1: float
+    average_gain_score: float
+    win_rate_score: int
+    drawdown_score: float
+    final_score: int
 
     def __init__(self, market_data: pd.DataFrame):
         # Now we want to construct a DataFrame with all metrics
@@ -795,3 +804,85 @@ class RoboticFundMetrics():
         print(
             f"Minimum account balance required ${account_balance_need}")
         print(f"----------------------------------------------------------------------------------------------------------------------")
+        self.set_model_score(position_size)
+
+    def set_model_score(self, position_size):
+        print("--- Starting scoring model ---")
+        self.position_size = position_size
+        self.win_rate = round((self.df[self.df.profit > 0].shape[0] /
+                               self.df[abs(self.df.profit) > 0].shape[0]) * 100, 1)
+        self.max_drawdown = self.df['drawdown'].min()
+        self.max_profit_streak = self.df['profit_streak'].max()
+        self.average_gain_weighted_to_1 = self.df['profit'].mean(
+        )/position_size
+        self.set_win_rate_score()
+        self.set_drawdown_score()
+        self.set_average_gain_score()
+        self.calc_final_score()
+        print("--- End scoring model ---")
+
+    def set_average_gain_score(self) -> None:
+        # Average profit size weighted heaviest
+        if self.average_gain_weighted_to_1 > 10:
+            self.average_gain_score = 10
+        elif self.average_gain_weighted_to_1 > 9:
+            self.average_gain_score = 9
+        elif self.average_gain_weighted_to_1 > 8:
+            self.average_gain_score = 8
+        elif self.average_gain_weighted_to_1 > 7:
+            self.average_gain_score = 7
+        elif self.average_gain_weighted_to_1 > 6:
+            self.average_gain_score = 6
+        elif self.average_gain_weighted_to_1 > 5:
+            self.average_gain_score = 5
+        elif self.average_gain_weighted_to_1 > 4:
+            self.average_gain_score = 4
+        elif self.average_gain_weighted_to_1 > 3:
+            self.average_gain_score = 3
+        elif self.average_gain_weighted_to_1 > 2:
+            self.average_gain_score = 2
+        elif self.average_gain_weighted_to_1 > 1:
+            self.average_gain_score = 1
+        else:
+            self.average_gain_score = -1
+        print(
+            f"{self.average_gain_score}: Average gain score for value ${round(self.average_gain_weighted_to_1,0)}")
+
+    def set_win_rate_score(self) -> None:
+        # Win rate
+        if self.win_rate > 90:
+            self.win_rate_score = 5
+        elif self.win_rate > 80:
+            self.win_rate_score = 4
+        elif self.win_rate > 70:
+            self.win_rate_score = 3
+        elif self.win_rate > 60:
+            self.win_rate_score = 2
+        elif self.win_rate > 50:
+            self.win_rate_score = 1
+        else:
+            self.win_rate_score = -1
+        print(
+            f"{self.win_rate_score}: Win rate score for value {self.win_rate}%")
+
+    def set_drawdown_score(self) -> None:
+        # Largest profit streak divided by max drawdown
+        profit_drawdown_ratio = abs(
+            self.max_profit_streak)/abs(self.max_drawdown)
+        if profit_drawdown_ratio >= 3:
+            self.drawdown_score = 3
+        elif profit_drawdown_ratio >= 2:
+            self.drawdown_score = 2
+        elif profit_drawdown_ratio >= 1.5:
+            self.drawdown_score = 1.5
+        elif profit_drawdown_ratio >= 1:
+            self.drawdown_score = 1
+        else:
+            self.drawdown_score = -1
+        print(
+            f"{self.drawdown_score}: Profit/drawdown ratio score for value {round(profit_drawdown_ratio,1)}")
+
+    def calc_final_score(self) -> None:
+        self.final_score = self.win_rate_score + \
+            self.drawdown_score + self.average_gain_score
+        print(f"{self.final_score}: Final model score")
