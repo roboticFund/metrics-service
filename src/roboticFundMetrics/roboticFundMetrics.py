@@ -818,8 +818,33 @@ class RoboticFundMetrics():
         self.set_win_rate_score()
         self.set_drawdown_score()
         self.set_average_gain_score()
+        self.set_monthly_profit_score()
+
+        # Calculate final score
         self.calc_final_score()
         print("--- End scoring model ---")
+
+    def set_monthly_profit_score(self) -> None:
+        # Profit per month
+        self.profit_per_month = self.df[['snapshotTimeUTC', 'profit']].groupby(pd.Grouper(key='snapshotTimeUTC', axis=0,
+                                                                                          freq='M')).sum()
+        self.win_rate_per_month = round((self.profit_per_month[self.profit_per_month.profit > 0].shape[0] /
+                                         self.profit_per_month[abs(self.profit_per_month.profit) > 0].shape[0]) * 100, 1)
+
+        if self.win_rate_per_month > 90:
+            self.win_rate_per_month_score = 5
+        elif self.win_rate_per_month > 80:
+            self.win_rate_per_month_score = 4
+        elif self.win_rate_per_month > 70:
+            self.win_rate_per_month_score = 3
+        elif self.win_rate_per_month > 60:
+            self.win_rate_per_month_score = 2
+        elif self.win_rate_per_month > 50:
+            self.win_rate_per_month_score = 1
+        else:
+            self.win_rate_per_month_score = -1
+        print(
+            f"{self.win_rate_per_month_score}: Monthly win rate score value {self.win_rate_per_month}%")
 
     def set_average_gain_score(self) -> None:
         # Average profit size weighted heaviest
@@ -884,5 +909,5 @@ class RoboticFundMetrics():
 
     def calc_final_score(self) -> None:
         self.final_score = self.win_rate_score + \
-            self.drawdown_score + self.average_gain_score
+            self.drawdown_score + self.average_gain_score + self.win_rate_per_month_score
         print(f"{self.final_score}: Final model score")
