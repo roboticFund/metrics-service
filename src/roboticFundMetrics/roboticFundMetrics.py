@@ -329,6 +329,29 @@ class RoboticFundMetrics():
         self.df['short_stop'] = self.df['closePrice'] + \
             self.df['atr']*mult_short
 
+    def set_stops_from_atr_direction(self, atr_length: int, mult: int, direction: str) -> None:
+        '''
+        Description: Calculate the stop price for long or short positions as specific by direction
+
+        Args:
+            atr_length (int): ATR length
+            mult (int): ATR multipler from closePrice
+            direction (str): 'long' or 'short'
+
+        Returns:
+            adds float column to dataframe 'long_stop' in class variable 'df' OR
+            adds float column to dataframe 'short_stop' in class variable 'df'
+        '''
+        self.set_atr(atr_length)
+        if direction == 'long':
+            self.df['long_stop'] = self.df['closePrice'] - self.df['atr']*mult
+        elif direction == 'short':
+            self.df['short_stop'] = self.df['closePrice'] + \
+                self.df['atr']*mult
+        else:
+            raise Exception(
+                'long or short not provided in direction parameter')
+
     def set_stops_from_spikes(self, look_back_period: int) -> None:
         '''
         Description: Calculate the stop price for long and short positions
@@ -381,6 +404,29 @@ class RoboticFundMetrics():
             self.df['atr']*mult_long
         self.df['short_profit_take'] = self.df['closePrice'] - \
             self.df['atr']*mult_short
+
+    def set_limits_from_atr_direction(self, atr_length: int, mult: int, direction: str) -> None:
+        '''
+        Description: Calculate the limit price for long and short positions
+
+        Args:
+            atr_length (int): ATR lenght
+            mult (int): ATR multipler
+            direction (str): 'long' or 'short'
+
+        Returns:
+            adds float column to dataframe 'long/short_profit_take' in class variable 'df'
+            adds float column to dataframe 'short/short_profit_take' in class variable 'df'
+        '''
+        self.set_atr(atr_length)
+        if direction == 'long':
+            self.df[f'{direction}_profit_take'] = self.df['closePrice'] + \
+                self.df['atr']*mult
+        elif direction == 'short':
+            self.df[f'{direction}_profit_take'] = self.df['closePrice'] - \
+                self.df['atr']*mult
+        else:
+            raise Exception('long or short direction not provided.')
 
     def calcualte_fibonacci_retracement(self, threshold_large_step: int) -> None:
         reset_index = None
