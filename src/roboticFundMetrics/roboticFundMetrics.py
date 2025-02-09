@@ -111,8 +111,9 @@ class RoboticFundMetrics():
         Returns:
             adds column to dataframe 'tr' in class variable 'df'
         '''
-        self.df['tr'] = self.df.apply(lambda row: max(row['highPrice'] - row['lowPrice'], abs(
-            row['highPrice'] - row['closePrice']), abs(row['lowPrice'] - row['closePrice'])), axis=1)
+        prev_close = self.df['closePrice'].shift(1)
+        self.df['tr'] = np.maximum.reduce([self.df['highPrice'] - self.df['lowPrice'], (
+            self.df['highPrice'] - prev_close).abs(), (self.df['lowPrice'] - prev_close).abs()])
 
     def set_atr(self, length: int) -> None:
         '''
