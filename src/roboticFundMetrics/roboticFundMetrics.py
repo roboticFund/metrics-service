@@ -745,10 +745,14 @@ class RoboticFundMetrics():
         short_counter = 0
         profit_streak = 0
         drawdown = 0
+        stop_violation_counter = 0
+        limit_violation_counter = 0
         self.df['long_counter'] = 0
         self.df['short_counter'] = 0
         self.df['profit_streak'] = 0
         self.df['drawdown'] = 0
+        self.df['stop_violation'] = 0
+        self.df['limit_violation'] = 0
         for row in self.df.itertuples():
             if (row.profit > 0):
                 profit_streak = profit_streak + row.profit
@@ -769,6 +773,15 @@ class RoboticFundMetrics():
                 short_counter = 0
             if row.long_exit_signal == True:
                 long_counter = 0
+
+            if (row.entry_long == True and row.long_stop > row.closePrice) or (row.entry_short == True and row.short_stop < row.closePrice):
+                stop_violation_counter = stop_violation_counter+1
+                self.df.loc[row[0], 'stop_violation'] = stop_violation_counter
+
+            if (row.entry_long == True and row.long_profit_take < row.closePrice) or (row.entry_short and row.short_profit_take > row.closePrice):
+                limit_violation_counter = limit_violation_counter+1
+                self.df.loc[row[0],
+                            'limit_violation'] = limit_violation_counter
 
     def set_notional_value(self, position_size: float = 1):
         if (self.df['instrument'].iloc[0] == 'AUDUSD'):
@@ -852,6 +865,14 @@ class RoboticFundMetrics():
             f"Minimum account balance required ${account_balance_need}")
         print(f"----------------------------------------------------------------------------------------------------------------------")
         self.set_model_score(position_size)
+        self.print_violations()
+
+    def print_violations(self):
+        print("--- Starting violations ---")
+        print(f"Stop price violation count {self.df['stop_violation'].sum()}")
+        print(
+            f"Limit price violation count {self.df['limit_violation'].sum()}")
+        print("--- End scoring model ---")
 
     def set_model_score(self, position_size):
         print("--- Starting scoring model ---")
