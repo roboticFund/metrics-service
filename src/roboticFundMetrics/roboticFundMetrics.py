@@ -27,6 +27,8 @@ class RoboticFundMetrics():
         self.df['tmp_date'] = pd.to_datetime(self.df['snapshotTimeUTC'])
         self.df['weekNumber'] = self.df['tmp_date'].dt.isocalendar().week
         self.df['dayOfYear'] = self.df['tmp_date'].dt.day_of_week
+        self.df['hour'] = self.df['snapshotTimeUTC'].dt.hour
+        self.df['dayOfWeek'] = self.df['snapshotTimeUTC'].dt.dayofweek
         self.df['SMA_12'] = self.df['closePrice'].rolling(window=12).mean()
         self.df['SMA_25'] = self.df['closePrice'].rolling(window=25).mean()
         self.df['SMA_50'] = self.df['closePrice'].rolling(window=50).mean()
@@ -808,7 +810,7 @@ class RoboticFundMetrics():
 
         # Print trade level data
         print(self.df[['openPrice', 'lowPrice', 'highPrice', 'closePrice', 'entry_long', 'long_stop', 'long_profit_take', 'entry_short', 'short_stop',
-                       'short_profit_take', 'sellDate', 'sellPrice', 'profit', 'drawdown', 'exit_reason']].to_string())
+                       'short_profit_take', 'sellDate', 'sellPrice', 'profit', 'drawdown', 'exit_reason', 'long_counter', 'short_counter']].to_string())
 
         # Output summary stats
         self.df['buyDate'] = pd.to_datetime(self.df['buyDate'])
@@ -833,10 +835,7 @@ class RoboticFundMetrics():
         win_rate = round((self.df[self.df.profit > 0].shape[0] /
                           self.df[abs(self.df.profit) > 0].shape[0]) * 100, 1)
         print(f"Win rate is {win_rate}%")
-        print(f"----------------------------------------------------------------------------------------------------------------------")
-        print(
-            f"{round(self.df.groupby(self.df.index.year)['profit'].sum(),1)}")
-        print(f"----------------------------------------------------------------------------------------------------------------------")
+        print(f"\n----------------------------------------------------------------------------------------------------------------------")
         print(f"Max number of long positions {self.df['long_counter'].max()}")
         print(
             f"Max number of short positions {self.df['short_counter'].max()}")
@@ -854,28 +853,83 @@ class RoboticFundMetrics():
             f"Short profit ${round(self.df[self.df['entry_short']==True]['profit'].sum(),1)}")
         print(
             f"{round(self.df.groupby(self.df.exit_reason)['profit'].count(),1)}")
-        # Calculate what Account balance is required to trade this
+        account_balance_needed = self.get_account_balance_needed()
+        print(
+            f"Minimum account balance required ${account_balance_needed}")
+        print(f"\n----------------------------------------------------------------------------------------------------------------------")
+        self.df['number_of_trades'] = np.where(
+            (self.df['profit'].abs() > 0), 1, 0)
+        self.df['number_of_profitable_trades'] = np.where(
+            (self.df['profit'] > 0), 1, 0)
+        print(self.df.groupby(self.df.index.year).apply(lambda s: pd.Series({
+            "Trades": s["number_of_trades"].sum(),
+            "Win rate (%)": round(s["number_of_profitable_trades"].sum()/s["number_of_trades"].sum() * 100, 1),
+            "Max drawdown (%)": round(s["drawdown"].min()/account_balance_needed * 100 * -1, 1),
+            "Max number of short held trades (#)": s['short_counter'].max(),
+            "Max number of long held trades (#)": s['long_counter'].max(),
+            "Return on capital (%)": round(s["profit"].sum()/account_balance_needed * 100, 1),
+            "Trading capital ($)": round(account_balance_needed, 0),
+            "Profit ($)": round(s["profit"].sum(), 0),
+        })))
+        self.set_model_score(position_size)
+        self.print_violations()
+        self.print_sharpe_ratio()
+        print("\n")
+
+    def get_max_holds(self) -> int:
+        '''
+        Description: Get the maximum number of positions held at any one time
+
+        Args:
+            None
+
+        Returns:
+            max_holds (int): maximum number of positions held at any one time
+        '''
         if self.df['short_counter'].max() > self.df['long_counter'].max():
             max_holds = self.df['short_counter'].max()
         else:
             max_holds = self.df['long_counter'].max()
-        account_balance_need = margin_per_trade + max_holds * margin_per_trade + \
-            abs(round(self.df['drawdown'].min(), 0))
-        print(
-            f"Minimum account balance required ${account_balance_need}")
-        print(f"----------------------------------------------------------------------------------------------------------------------")
-        self.set_model_score(position_size)
-        self.print_violations()
+        return max_holds
+
+    def get_account_balance_needed(self, position_size: float = 125, average_margin=0.005):
+        max_holds = self.get_max_holds()
+        account_balance_needed_max_holds = max_holds*position_size/average_margin
+        account_balance_need_through_drawdown = abs(
+            round(self.df['drawdown'].min(), 0))*2
+
+        account_balance_need = account_balance_needed_max_holds + \
+            account_balance_need_through_drawdown
+
+        self.df['account_balance_need'] = account_balance_need
+        return account_balance_need
 
     def print_violations(self):
-        print("--- Starting violations ---")
+        print("\n--- Starting violations ---")
         print(f"Stop price violation count {self.df['stop_violation'].sum()}")
         print(
             f"Limit price violation count {self.df['limit_violation'].sum()}")
         print("--- End scoring model ---")
 
+    def print_sharpe_ratio(self):
+        print("\n--- Starting Sharpe Ratio ---")
+        avg_return = self.df['profit'].groupby(
+            self.df.index.year).sum()/self.df['account_balance_need'].max()
+        total_avg_return = self.df['profit'].sum(
+        )/self.df['account_balance_need'].max()
+        num_years = len(list({i for i in self.df.index.year}))
+        annualised_return = pow((1+total_avg_return), 1/num_years)-1
+        risk_free_return = 0.03
+        std_profit = avg_return.std()
+        sharpe_ratio = (annualised_return - risk_free_return) / std_profit
+        print(f"Annualised return {round(annualised_return*100,2)}%")
+        print(f"Risk free return {round(risk_free_return*100,2)}%")
+        print(f"Standard deviation of profit {round(std_profit*100,2)}%")
+        print(f"Sharpe ratio {round(sharpe_ratio,2)}")
+        print("--- End Sharpe Ratio ---")
+
     def set_model_score(self, position_size):
-        print("--- Starting scoring model ---")
+        print("\n--- Starting scoring model ---")
         self.position_size = position_size
         self.win_rate = round((self.df[self.df.profit > 0].shape[0] /
                                self.df[abs(self.df.profit) > 0].shape[0]) * 100, 1)
