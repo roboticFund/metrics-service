@@ -30,6 +30,10 @@ class Broker_Id_Resolver:
             "CI": "101664", "EOD": "WBC.AU"},
         {"market_id": "WES", "IG": "AA.D.WES.CASH.IP",
             "CI": "101671", "EOD": "WES.AU"},
+        {"market_id": "GOLD", "IG": "CS.D.CFDGOLD.CFM.IP",
+            "CI": "401119705", "EOD": "", "pip": 1},
+        {"market_id": "US500", "IG": "IX.D.SPTRD.IFD.IP",
+            "CI": "99504", "EOD": "", "pip": 1}
     ]
 
     def __init__(self, marketName):

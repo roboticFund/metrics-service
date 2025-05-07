@@ -12,6 +12,7 @@ class CI:
     accept = "application/json; charset=UTF-8"
     access_token = ""
     ci_url = "https://ciapi.cityindex.com/TradingAPI"
+    ci_session_token: str
 
     def __init__(self):
         self.secret_name = "ci-robotic-fund"
@@ -43,6 +44,7 @@ class CI:
         print(f"CI connect attempt REST response code {r.status_code}")
         response = r.json()
         self.set_headers(response['Session'])
+        self.ci_session_token = response['Session']
 
     def return_ci_resolution(self, resolution) -> str:
         if resolution == "MINUTE_10":
@@ -103,7 +105,7 @@ class CI:
         response_json = r.json()
         print(response_json)
 
-    def get_market_data_history(self, market_name, year=2023, month=1):
+    def get_market_data_history(self, market_name, resolution, year=2023, month=1):
         print(
             f"Getting market data history from CI for {market_name} for year {year} and month {month}")
         epic = Broker_Id_Resolver(market_name).return_ci_epic()
@@ -123,7 +125,7 @@ class CI:
         to_date = datetime.date(to_year, to_month, 1).strftime("%s")
 
         r = requests.get(
-            f"{self.ci_url}/market/{epic}/barhistorybetween?interval=MINUTE&span=30&fromTimestampUTC={from_date}&toTimestampUTC={to_date}", headers=self.headers)
+            f"{self.ci_url}/market/{epic}/barhistorybetween?interval=MINUTE&span={resolution}&fromTimestampUTC={from_date}&toTimestampUTC={to_date}", headers=self.headers)
         response_json = r.json()
         market_data = pandas.DataFrame.from_dict(response_json['PriceBars'])
         if market_data.empty:
@@ -138,7 +140,7 @@ class CI:
             market_data['instrument'] = market_name
             market_data['datetime'] = market_data['snapshotTimeUTC']
             market_data['insertStamp'] = datetime.datetime.now()
-            market_data['resolution'] = "MINUTE_30"
+            market_data['resolution'] = f"MINUTE_{resolution}"
             market_data = market_data[market_data['openPrice'].notna()]
             market_data = market_data.set_index('snapshotTimeUTC')
 
@@ -148,11 +150,11 @@ class CI:
 
             return market_data
 
-    def get_one_year_data(self, market_name, year=2023):
+    def get_one_year_data(self, market_name, resolution, year=2023):
         df = pandas.DataFrame()
         for i in range(1, 13):
             market_data = self.get_market_data_history(
-                market_name, year=year, month=i)
+                market_name, resolution, year=year, month=i)
             df = pandas.concat([df, market_data], axis=0)
 
         df = df.drop_duplicates(
@@ -160,18 +162,27 @@ class CI:
 
         return df
 
-    def store_multiple_years_in_db(self, market_name, from_year=2022, to_year=2024):
+    def store_multiple_years_in_db(self, market_name, resolution, from_year=2022, to_year=2024):
         con = dbConnect()
         df = pandas.DataFrame()
         for i in range(from_year, to_year):
-            market_data = self.get_one_year_data(market_name, i)
+            market_data = self.get_one_year_data(market_name, resolution, i)
             df = pandas.concat([df, market_data], axis=0)
 
         df = df.drop_duplicates(
             subset=['instrument', 'resolution', 'datetime'])
         df.to_sql('market_data', con, if_exists='append')
 
+    def delete_session(self) -> None:
+        r = requests.post(
+            f'{self.ci_url}/session/deleteSession?UserName={self.account_id}&Session={self.ci_session_token}', json={"UserName": self.account_id, "Session": self.ci_session_token, "AppVersion": "1", "AppComments": "", "AppKey": self.api_key}, headers={"Version": "3", "Content-Type": self.content_type, "Accept": self.accept})
+        print(f"CI deleting session - {r.status_code}")
 
-# ci = CI()
-# ci.store_multiple_years_in_db("USDJPY")
-# data = ci.get_latest_tick("AUDUSD", "MINUTE_15")
+
+instrument = "GOLD"
+resolution = "30"
+ci = CI()
+ci.store_multiple_years_in_db(
+    instrument, resolution, from_year=2015, to_year=2026)
+ci.delete_session()
+# ci.get_latest_tick("US500", "MINUTE_15")
