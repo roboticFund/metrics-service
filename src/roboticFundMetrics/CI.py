@@ -179,10 +179,10 @@ class CI:
         print(f"CI deleting session - {r.status_code}")
 
 
-instrument = "GOLD"
-resolution = "30"
-ci = CI()
-ci.store_multiple_years_in_db(
-    instrument, resolution, from_year=2015, to_year=2026)
-ci.delete_session()
+# instrument = "GOLD"
+# resolution = "30"
+# ci = CI()
+# ci.store_multiple_years_in_db(
+#     instrument, resolution, from_year=2015, to_year=2026)
+# ci.delete_session()
 # ci.get_latest_tick("US500", "MINUTE_15")
