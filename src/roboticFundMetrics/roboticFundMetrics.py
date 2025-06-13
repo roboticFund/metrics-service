@@ -27,8 +27,9 @@ class RoboticFundMetrics():
         self.df['tmp_date'] = pd.to_datetime(self.df['snapshotTimeUTC'])
         self.df['weekNumber'] = self.df['tmp_date'].dt.isocalendar().week
         self.df['dayOfYear'] = self.df['tmp_date'].dt.day_of_week
-        self.df['hour'] = self.df['snapshotTimeUTC'].dt.hour
-        self.df['dayOfWeek'] = self.df['snapshotTimeUTC'].dt.dayofweek
+        self.df['hour'] = self.df['tmp_date'].dt.hour
+        self.df['year'] = self.df['tmp_date'].dt.year
+        self.df['dayOfWeek'] = self.df['tmp_date'].dt.dayofweek
         self.df['SMA_12'] = self.df['closePrice'].rolling(window=12).mean()
         self.df['SMA_25'] = self.df['closePrice'].rolling(window=25).mean()
         self.df['SMA_50'] = self.df['closePrice'].rolling(window=50).mean()
@@ -809,8 +810,8 @@ class RoboticFundMetrics():
         self.add_more_stats()
 
         # Print trade level data
-        print(self.df[['openPrice', 'lowPrice', 'highPrice', 'closePrice', 'entry_long', 'long_stop', 'long_profit_take', 'entry_short', 'short_stop',
-                       'short_profit_take', 'sellDate', 'sellPrice', 'profit', 'drawdown', 'exit_reason', 'long_counter', 'short_counter']].to_string())
+        # print(self.df[['openPrice', 'lowPrice', 'highPrice', 'closePrice', 'entry_long', 'long_stop', 'long_profit_take', 'entry_short', 'short_stop',
+        #                'short_profit_take', 'sellDate', 'sellPrice', 'profit', 'drawdown', 'exit_reason', 'long_counter', 'short_counter']].to_string())
 
         # Output summary stats
         self.df['buyDate'] = pd.to_datetime(self.df['buyDate'])
@@ -861,7 +862,7 @@ class RoboticFundMetrics():
             (self.df['profit'].abs() > 0), 1, 0)
         self.df['number_of_profitable_trades'] = np.where(
             (self.df['profit'] > 0), 1, 0)
-        print(self.df.groupby(self.df.index.year).apply(lambda s: pd.Series({
+        print(self.df.groupby(self.df['year']).apply(lambda s: pd.Series({
             "Trades": s["number_of_trades"].sum(),
             "Win rate (%)": round(s["number_of_profitable_trades"].sum()/s["number_of_trades"].sum() * 100, 1),
             "Max drawdown (%)": round(s["drawdown"].min()/account_balance_needed * 100 * -1, 1),
@@ -914,10 +915,10 @@ class RoboticFundMetrics():
     def print_sharpe_ratio(self):
         print("\n--- Starting Sharpe Ratio ---")
         avg_return = self.df['profit'].groupby(
-            self.df.index.year).sum()/self.df['account_balance_need'].max()
+            self.df['year']).sum()/self.df['account_balance_need'].max()
         total_avg_return = self.df['profit'].sum(
         )/self.df['account_balance_need'].max()
-        num_years = len(list({i for i in self.df.index.year}))
+        num_years = len(list({i for i in self.df['year']}))
         annualised_return = pow((1+total_avg_return), 1/num_years)-1
         risk_free_return = 0.03
         std_profit = avg_return.std()
@@ -948,7 +949,7 @@ class RoboticFundMetrics():
 
     def set_monthly_profit_score(self) -> None:
         # Profit per month
-        self.profit_per_month = self.df[['snapshotTimeUTC', 'profit']].groupby(pd.Grouper(key='snapshotTimeUTC', axis=0,
+        self.profit_per_month = self.df[['tmp_date', 'profit']].groupby(pd.Grouper(key='tmp_date', axis=0,
                                                                                           freq='ME')).sum()
         self.win_rate_per_month = round((self.profit_per_month[self.profit_per_month.profit > 0].shape[0] /
                                          self.profit_per_month[abs(self.profit_per_month.profit) > 0].shape[0]) * 100, 1)
