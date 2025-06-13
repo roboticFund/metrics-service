@@ -125,7 +125,7 @@ class CI:
         to_date = datetime.date(to_year, to_month, 1).strftime("%s")
 
         r = requests.get(
-            f"{self.ci_url}/market/{epic}/barhistorybetween?interval=MINUTE&span={resolution}&fromTimestampUTC={from_date}&toTimestampUTC={to_date}", headers=self.headers)
+            f"{self.ci_url}/market/{epic}/barhistorybetween?interval=MINUTE&span={resolution}&fromTimestampUTC={from_date}&toTimestampUTC={to_date}&priceType=ASK", headers=self.headers)
         response_json = r.json()
         market_data = pandas.DataFrame.from_dict(response_json['PriceBars'])
         if market_data.empty:
