@@ -264,7 +264,7 @@ class RoboticFundMetrics():
         self.df['upper_kc'] = upper_kc
         self.df['lower_kc'] = lower_kc
 
-    def set_bollinger_bands(self, length: int, mult: int, length_std: int) -> None:
+    def set_bollinger_bands(self, length: int, mult: float, length_std: int) -> None:
         '''
         Description: Calculates the bollinger bands
 
@@ -277,7 +277,7 @@ class RoboticFundMetrics():
             adds columns to dataframe 'lower_bb' in class variable 'df'
         '''
         m_avg = self.df['closePrice'].rolling(window=length).mean()
-        m_std = self.df['closePrice'].rolling(window=length_std).std(ddof=0)
+        m_std = self.df['closePrice'].rolling(window=length).std()
         self.df['upper_bb'] = m_avg + mult * m_std
         self.df['lower_bb'] = m_avg - mult * m_std
 
@@ -471,7 +471,7 @@ class RoboticFundMetrics():
         self.df['short_stop'] = abs(
             (max_loss / (5000 / 0.004))+1)*(self.df['closePrice'])
 
-    def simulate_trades_intraday(self) -> pd.DataFrame:
+    def simulate_trades_intraday_trailing_stop(self, trailing_step_pips=1) -> pd.DataFrame:
         """ Run a back test for a given trading strategy
         The dataframe requires the following fields:
         - snapshotTimeUTC: date
@@ -509,18 +509,22 @@ class RoboticFundMetrics():
             self.df.loc[long_entry[0], 'buyDate'] = long_entry.snapshotTimeUTC
             self.df.loc[long_entry[0], 'buyPrice'] = long_entry.closePrice
             scan_forward = self.df[long_entry[0]:]
+            # Trailing stop logic
+            new_long_stop = long_entry.long_stop
+            original_long_stop_gap = long_entry.closePrice - long_entry.long_stop
+
             for long_exit in scan_forward.itertuples():
-                limit_level = self.df.loc[long_entry[0], 'long_profit_take']
-                if (long_exit.lowPrice < long_entry.long_stop and long_exit.snapshotTimeUTC != long_entry.snapshotTimeUTC):
-                    sell_price = long_entry.long_stop
+                new_long_stop_gap = long_exit.closePrice - new_long_stop
+                if (long_exit.lowPrice < new_long_stop and long_exit.snapshotTimeUTC != long_entry.snapshotTimeUTC):
+                    sell_price = new_long_stop
                     self.df.loc[long_entry[0], 'sellPrice'] = sell_price
                     self.df.loc[long_exit[0], 'long_exit_signal'] = True
                     self.df.loc[long_entry[0], 'exit_reason'] = 'STOP'
                     self.df.loc[long_entry[0],
                                 'sellDate'] = long_exit.snapshotTimeUTC
                     break
-                elif (long_exit.highPrice > limit_level and long_exit.snapshotTimeUTC != long_entry.snapshotTimeUTC):
-                    sell_price = limit_level
+                elif (long_exit.highPrice > long_entry.long_profit_take and long_exit.snapshotTimeUTC != long_entry.snapshotTimeUTC):
+                    sell_price = long_entry.long_profit_take
                     self.df.loc[long_entry[0], 'sellPrice'] = sell_price
                     self.df.loc[long_exit[0], 'long_exit_signal'] = True
                     self.df.loc[long_entry[0], 'exit_reason'] = 'LIMIT'
@@ -535,6 +539,8 @@ class RoboticFundMetrics():
                     self.df.loc[long_entry[0],
                                 'sellDate'] = long_exit.snapshotTimeUTC
                     break
+                elif new_long_stop_gap - original_long_stop_gap > trailing_step_pips:
+                    new_long_stop = long_exit.closePrice - original_long_stop_gap
 
         # Simulate short exit
         for short_entry in short_entry_metrics.itertuples():
@@ -542,18 +548,23 @@ class RoboticFundMetrics():
                         'buyDate'] = short_entry.snapshotTimeUTC
             self.df.loc[short_entry[0], 'buyPrice'] = short_entry.closePrice
             scan_forward = self.df[short_entry[0]:]
+            # Trailing stop logic
+            new_short_stop = short_entry.short_stop
+            original_short_stop_gap = short_entry.short_stop - short_entry.closePrice
+
             for short_exit in scan_forward.itertuples():
-                limit_level = self.df.loc[short_entry[0], 'short_profit_take']
-                if (short_exit.highPrice > short_entry.short_stop and (short_exit.snapshotTimeUTC != short_entry.snapshotTimeUTC)):
-                    sell_price = short_entry.short_stop
+                new_short_stop_gap = new_short_stop - short_exit.closePrice
+
+                if (short_exit.highPrice > new_short_stop and (short_exit.snapshotTimeUTC != short_entry.snapshotTimeUTC)):
+                    sell_price = new_short_stop
                     self.df.loc[short_entry[0], 'sellPrice'] = sell_price
                     self.df.loc[short_exit[0], 'short_exit_signal'] = True
                     self.df.loc[short_entry[0], 'exit_reason'] = 'STOP'
                     self.df.loc[short_entry[0],
                                 'sellDate'] = short_exit.snapshotTimeUTC
                     break
-                elif (short_exit.lowPrice < limit_level and (short_exit.snapshotTimeUTC != short_entry.snapshotTimeUTC)):
-                    sell_price = limit_level
+                elif (short_exit.lowPrice < short_entry.short_profit_take and (short_exit.snapshotTimeUTC != short_entry.snapshotTimeUTC)):
+                    sell_price = short_entry.short_profit_take
                     self.df.loc[short_entry[0], 'sellPrice'] = sell_price
                     self.df.loc[short_exit[0], 'short_exit_signal'] = True
                     self.df.loc[short_entry[0], 'exit_reason'] = 'LIMIT'
@@ -568,6 +579,9 @@ class RoboticFundMetrics():
                     self.df.loc[short_entry[0],
                                 'sellDate'] = short_exit.snapshotTimeUTC
                     break
+                elif new_short_stop_gap - original_short_stop_gap > trailing_step_pips:
+                    new_short_stop = short_exit.closePrice + original_short_stop_gap
+                    
         return self.df
 
     def set_df_values(self, buyDate, sell_price, reason, sell_date, direction):
@@ -579,7 +593,7 @@ class RoboticFundMetrics():
         else:
             self.df.loc[sell_date, 'long_exit_signal'] = True
 
-    def simulate_trades_intraday_v2(self) -> None:
+    def simulate_trades_intraday(self) -> None:
         """ Run a back test for a given trading strategy
         The dataframe requires the following fields:
         - snapshotTimeUTC: date
@@ -715,7 +729,8 @@ class RoboticFundMetrics():
                     reason = 'RULE'
                     self.set_df_values(buyDate, sell_price,
                                        reason, sell_date, 'SHORT')
-
+                        
+                    
     def add_more_stats(self) -> None:
         '''
         Description: Calculates simulation stats
@@ -810,8 +825,8 @@ class RoboticFundMetrics():
         self.add_more_stats()
 
         # Print trade level data
-        # print(self.df[['openPrice', 'lowPrice', 'highPrice', 'closePrice', 'entry_long', 'long_stop', 'long_profit_take', 'entry_short', 'short_stop',
-        #                'short_profit_take', 'sellDate', 'sellPrice', 'profit', 'drawdown', 'exit_reason', 'long_counter', 'short_counter']].to_string())
+        print(self.df[['openPrice', 'lowPrice', 'highPrice', 'closePrice', 'entry_long', 'long_stop', 'long_profit_take', 'entry_short', 'short_stop',
+                       'short_profit_take', 'sellDate', 'sellPrice', 'profit', 'drawdown', 'exit_long','exit_short','exit_reason', 'long_counter', 'short_counter']].to_string())
 
         # Output summary stats
         self.df['buyDate'] = pd.to_datetime(self.df['buyDate'])
